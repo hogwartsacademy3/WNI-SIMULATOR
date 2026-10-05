@@ -56,8 +56,8 @@
         /* Strict 11x11 Grid Layout */
         .board-grid {
             display: grid;
-            grid-template-columns: repeat(11, 1fr);
-            grid-template-rows: repeat(11, 1fr);
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
             width: 100%;
             height: 100%;
             background: #1e293b;
@@ -87,12 +87,12 @@
         .tile-landed {
             animation: tilePulse 0.8s ease-in-out infinite alternate;
             z-index: 15;
-            box-shadow: inset 0 0 0 2px #ef4444;
+            box-shadow: inset 0 0 0 3px #ef4444;
         }
 
         @keyframes tilePulse {
             0% { filter: brightness(1); }
-            100% { filter: brightness(1.25); }
+            100% { filter: brightness(1.25); box-shadow: inset 0 0 15px rgba(239, 68, 68, 0.4); }
         }
 
         /* Tile Color Header */
@@ -118,8 +118,8 @@
 
         /* Clamped Dynamic Responsive Typography */
         .tile-title {
-            font-size: clamp(6px, 1.25vw, 10px);
-            line-height: 1.05;
+            font-size: clamp(7px, 1.6vw, 12px);
+            line-height: 1.1;
             font-weight: 800;
             letter-spacing: -0.01em;
             word-break: break-word;
@@ -129,7 +129,7 @@
         }
 
         .tile-price {
-            font-size: clamp(5px, 1.05vw, 9px);
+            font-size: clamp(6px, 1.3vw, 10px);
             font-weight: 700;
             line-height: 1;
             color: #475569;
@@ -137,9 +137,10 @@
 
         /* Board Center */
         .center-board {
-            grid-column: 2 / 11;
-            grid-row: 2 / 11;
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            grid-column: 2 / 8;
+            grid-row: 2 / 8;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%),
+                        repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 20px, transparent 20px, transparent 40px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -168,14 +169,11 @@
 
         /* Dice Rolling Visual */
         @keyframes diceShake {
-            0% { transform: rotate(0deg) scale(1); }
-            20% { transform: rotate(-15deg) scale(1.15); }
-            40% { transform: rotate(15deg) scale(1.15); }
-            60% { transform: rotate(-10deg) scale(1.1); }
-            80% { transform: rotate(10deg) scale(1.05); }
-            100% { transform: rotate(0deg) scale(1); }
+            0%, 100% { transform: rotate(0deg) scale(1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+            25% { transform: rotate(-15deg) scale(1.15); box-shadow: 0 20px 25px -5px rgba(239, 68, 68, 0.4); }
+            75% { transform: rotate(15deg) scale(1.15); box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.4); }
         }
-        .dice-rolling { animation: diceShake 0.15s infinite linear; }
+        .dice-rolling { animation: diceShake 0.25s infinite ease-in-out; }
 
         /* Card Entrance Animation */
         @keyframes cardPop {
@@ -343,44 +341,32 @@
         const BOARD_TILES = [
             { id: 0, name: 'GAJIAN', type: 'GO', desc: '+Rp2.000.000', icon: 'fa-sack-dollar' },
             { id: 1, name: 'Aceh', type: 'PROPERTY', group: 'COKELAT', price: 1000000, rent: [100000, 200000, 500000, 1000000, 1500000, 2000000] },
-            { id: 2, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
-            { id: 3, name: 'Sumatra Utara', type: 'PROPERTY', group: 'COKELAT', price: 1200000, rent: [100000, 200000, 500000, 1000000, 1500000, 2000000] },
-            { id: 4, name: 'PAJAK PENGHASILAN', type: 'TAX', amount: 500000, icon: 'fa-file-invoice-dollar' },
-            { id: 5, name: 'KERETA API', type: 'TRANSPORT', price: 2000000, icon: 'fa-train' },
-            { id: 6, name: 'Jawa Barat', type: 'PROPERTY', group: 'BIRUMUDA', price: 1500000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
-            { id: 7, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
-            { id: 8, name: 'Banten', type: 'PROPERTY', group: 'BIRUMUDA', price: 1700000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
-            { id: 9, name: 'DKI Jakarta', type: 'PROPERTY', group: 'BIRUMUDA', price: 2000000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
-            { id: 10, name: 'PENJARA / BERKUNJUNG', type: 'JAIL_VISIT', icon: 'fa-lock' },
-            { id: 11, name: 'Jawa Tengah', type: 'PROPERTY', group: 'PINK', price: 2200000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
-            { id: 12, name: 'PLN', type: 'UTILITY', price: 1500000, icon: 'fa-bolt' },
-            { id: 13, name: 'Yogyakarta', type: 'PROPERTY', group: 'PINK', price: 2400000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
-            { id: 14, name: 'Jawa Timur', type: 'PROPERTY', group: 'PINK', price: 2600000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
-            { id: 15, name: 'STASIUN', type: 'TRANSPORT', price: 2000000, icon: 'fa-subway' },
-            { id: 16, name: 'Bali', type: 'PROPERTY', group: 'ORANYE', price: 2800000, rent: [250000, 500000, 1250000, 2000000, 3000000, 3500000] },
-            { id: 17, name: 'REALITA', type: 'COMMUNITY', icon: 'fa-triangle-exclamation' },
-            { id: 18, name: 'NTB', type: 'PROPERTY', group: 'ORANYE', price: 3000000, rent: [250000, 500000, 1250000, 2000000, 3000000, 3500000] },
-            { id: 19, name: 'NTT', type: 'PROPERTY', group: 'ORANYE', price: 3200000, rent: [250000, 500000, 1250000, 2000000, 3000000, 3500000] },
-            { id: 20, name: 'PARKIR GRATIS', type: 'FREE_PARKING', icon: 'fa-square-parking' },
-            { id: 21, name: 'Kalimantan Barat', type: 'PROPERTY', group: 'MERAH', price: 3400000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
-            { id: 22, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
-            { id: 23, name: 'Kalimantan Selatan', type: 'PROPERTY', group: 'MERAH', price: 3600000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
-            { id: 24, name: 'Kalimantan Timur', type: 'PROPERTY', group: 'MERAH', price: 3800000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
-            { id: 25, name: 'PELABUHAN', type: 'TRANSPORT', price: 2000000, icon: 'fa-ship' },
-            { id: 26, name: 'Sulawesi Selatan', type: 'PROPERTY', group: 'KUNING', price: 4000000, rent: [350000, 700000, 1750000, 3000000, 4000000, 4500000] },
-            { id: 27, name: 'Sulawesi Utara', type: 'PROPERTY', group: 'KUNING', price: 4200000, rent: [350000, 700000, 1750000, 3000000, 4000000, 4500000] },
-            { id: 28, name: 'PDAM', type: 'UTILITY', price: 1500000, icon: 'fa-faucet-drip' },
-            { id: 29, name: 'Sulawesi Tengah', type: 'PROPERTY', group: 'KUNING', price: 4400000, rent: [350000, 700000, 1750000, 3000000, 4000000, 4500000] },
-            { id: 30, name: 'MASUK PENJARA', type: 'GO_TO_JAIL', icon: 'fa-gavel' },
-            { id: 31, name: 'Maluku', type: 'PROPERTY', group: 'HIJAU', price: 4600000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
-            { id: 32, name: 'Maluku Utara', type: 'PROPERTY', group: 'HIJAU', price: 4800000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
-            { id: 33, name: 'REALITA', type: 'COMMUNITY', icon: 'fa-triangle-exclamation' },
-            { id: 34, name: 'Papua Barat', type: 'PROPERTY', group: 'HIJAU', price: 5000000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
-            { id: 35, name: 'BANDARA', type: 'TRANSPORT', price: 2000000, icon: 'fa-plane' },
-            { id: 36, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
-            { id: 37, name: 'Papua', type: 'PROPERTY', group: 'BIRUTUA', price: 5500000, rent: [500000, 1000000, 2500000, 4000000, 5000000, 6000000] },
-            { id: 38, name: 'PAJAK KENDARAAN', type: 'TAX', amount: 300000, icon: 'fa-motorcycle' },
-            { id: 39, name: 'Raja Ampat', type: 'PROPERTY', group: 'BIRUTUA', price: 6000000, rent: [500000, 1000000, 2500000, 4000000, 5000000, 6000000] }
+            { id: 2, name: 'Sumatra Utara', type: 'PROPERTY', group: 'COKELAT', price: 1200000, rent: [100000, 200000, 500000, 1000000, 1500000, 2000000] },
+            { id: 3, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
+            { id: 4, name: 'KERETA API', type: 'TRANSPORT', price: 2000000, icon: 'fa-train' },
+            { id: 5, name: 'Jawa Barat', type: 'PROPERTY', group: 'BIRUMUDA', price: 1500000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
+            { id: 6, name: 'DKI Jakarta', type: 'PROPERTY', group: 'BIRUMUDA', price: 2000000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
+            { id: 7, name: 'PENJARA / BERKUNJUNG', type: 'JAIL_VISIT', icon: 'fa-lock' },
+            { id: 8, name: 'Jawa Tengah', type: 'PROPERTY', group: 'PINK', price: 2200000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
+            { id: 9, name: 'Jawa Timur', type: 'PROPERTY', group: 'PINK', price: 2600000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
+            { id: 10, name: 'REALITA', type: 'COMMUNITY', icon: 'fa-triangle-exclamation' },
+            { id: 11, name: 'STASIUN', type: 'TRANSPORT', price: 2000000, icon: 'fa-subway' },
+            { id: 12, name: 'Bali', type: 'PROPERTY', group: 'ORANYE', price: 2800000, rent: [250000, 500000, 1250000, 2000000, 3000000, 3500000] },
+            { id: 13, name: 'NTB', type: 'PROPERTY', group: 'ORANYE', price: 3000000, rent: [250000, 500000, 1250000, 2000000, 3000000, 3500000] },
+            { id: 14, name: 'PARKIR GRATIS', type: 'FREE_PARKING', icon: 'fa-square-parking' },
+            { id: 15, name: 'Kalimantan Barat', type: 'PROPERTY', group: 'MERAH', price: 3400000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
+            { id: 16, name: 'Kalimantan Timur', type: 'PROPERTY', group: 'MERAH', price: 3800000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
+            { id: 17, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
+            { id: 18, name: 'PELABUHAN', type: 'TRANSPORT', price: 2000000, icon: 'fa-ship' },
+            { id: 19, name: 'Sulawesi Selatan', type: 'PROPERTY', group: 'KUNING', price: 4000000, rent: [350000, 700000, 1750000, 3000000, 4000000, 4500000] },
+            { id: 20, name: 'Sulawesi Utara', type: 'PROPERTY', group: 'KUNING', price: 4200000, rent: [350000, 700000, 1750000, 3000000, 4000000, 4500000] },
+            { id: 21, name: 'MASUK PENJARA', type: 'GO_TO_JAIL', icon: 'fa-gavel' },
+            { id: 22, name: 'Maluku', type: 'PROPERTY', group: 'HIJAU', price: 4600000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
+            { id: 23, name: 'Papua Barat', type: 'PROPERTY', group: 'HIJAU', price: 5000000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
+            { id: 24, name: 'REALITA', type: 'COMMUNITY', icon: 'fa-triangle-exclamation' },
+            { id: 25, name: 'BANDARA', type: 'TRANSPORT', price: 2000000, icon: 'fa-plane' },
+            { id: 26, name: 'Papua', type: 'PROPERTY', group: 'BIRUTUA', price: 5500000, rent: [500000, 1000000, 2500000, 4000000, 5000000, 6000000] },
+            { id: 27, name: 'Raja Ampat', type: 'PROPERTY', group: 'BIRUTUA', price: 6000000, rent: [500000, 1000000, 2500000, 4000000, 5000000, 6000000] }
         ];
 
         const NASIB_CARDS = [
@@ -698,7 +684,7 @@
                         newState.turn.doublesCount++;
                         if (newState.turn.doublesCount === 3) {
                             logMsg(`${player.name} kena tilang ngebut (Double 3x). Masuk Penjara!`);
-                            player.position = 10;
+                            player.position = 7;
                             player.jailStatus = true;
                             nextTurn();
                             break;
@@ -709,10 +695,10 @@
 
                     // Move
                     const oldPos = player.position;
-                    player.position = (player.position + d1 + d2) % 40;
+                    player.position = (player.position + d1 + d2) % 28;
                     
                     // Pass GO
-                    if (player.position < oldPos && player.position !== 10 && !player.jailStatus) {
+                    if (player.position < oldPos && player.position !== 7 && !player.jailStatus) {
                         player.money += 2000000;
                         logMsg(`${player.name} melewati GAJIAN, dapat Rp2.000.000`);
                     }
@@ -763,7 +749,7 @@
                         else nextTurn();
                     } else if (tile.type === 'GO_TO_JAIL') {
                         logMsg(`${player.name} MASUK PENJARA!`);
-                        player.position = 10;
+                        player.position = 7;
                         player.jailStatus = true;
                         newState.turn.doublesCount = 0;
                         nextTurn();
@@ -776,9 +762,9 @@
                         if (card.action === 'money') {
                             player.money += card.amount;
                         } else if (card.action === 'move') {
-                            player.position = (player.position + card.amount + 40) % 40;
+                            player.position = (player.position + card.amount + 28) % 28;
                         } else if (card.action === 'jail') {
-                            player.position = 10;
+                            player.position = 7;
                             player.jailStatus = true;
                             newState.turn.doublesCount = 0;
                         } else if (card.action === 'keep_jail_card') {
@@ -924,7 +910,7 @@
                 let current = from;
 
                 const interval = setInterval(() => {
-                    current = (current + 1) % 40;
+                    current = (current + 1) % 28;
                     audioFX.playStep();
                     
                     if (current === 0 && from !== 0) {
@@ -1086,21 +1072,21 @@
                         <div className="w-full lg:flex-1 flex justify-center items-center">
                             <div className="board-wrapper">
                                 <div className="board-grid">
-                                    {/* Top Row (20 to 30) */}
-                                    {renderTile(20, 'col-start-1 row-start-1 rounded-tl-xl')}
-                                    {[21, 22, 23, 24, 25, 26, 27, 28, 29].map((i, idx) => renderTile(i, `col-start-${idx+2} row-start-1 tile-top`))}
-                                    {renderTile(30, 'col-start-11 row-start-1 rounded-tr-xl')}
+                                    {/* Top Row (14 to 21) */}
+                                    {renderTile(14, 'col-start-1 row-start-1 rounded-tl-xl')}
+                                    {[15, 16, 17, 18, 19, 20].map((i, idx) => renderTile(i, `col-start-${idx+2} row-start-1 tile-top`))}
+                                    {renderTile(21, 'col-start-8 row-start-1 rounded-tr-xl')}
 
-                                    {/* Right Col (31 to 39) */}
-                                    {[31, 32, 33, 34, 35, 36, 37, 38, 39].map((i, idx) => renderTile(i, `col-start-11 row-start-${idx+2} tile-right`))}
+                                    {/* Right Col (22 to 27) */}
+                                    {[22, 23, 24, 25, 26, 27].map((i, idx) => renderTile(i, `col-start-8 row-start-${idx+2} tile-right`))}
 
-                                    {/* Bottom Row (10 to 0) */}
-                                    {renderTile(10, 'col-start-1 row-start-11 rounded-bl-xl')}
-                                    {[9, 8, 7, 6, 5, 4, 3, 2, 1].map((i, idx) => renderTile(i, `col-start-${10-idx} row-start-11 tile-bottom`))}
-                                    {renderTile(0, 'col-start-11 row-start-11 rounded-br-xl')}
+                                    {/* Bottom Row (7 to 0) */}
+                                    {renderTile(7, 'col-start-1 row-start-8 rounded-bl-xl')}
+                                    {[6, 5, 4, 3, 2, 1].map((i, idx) => renderTile(i, `col-start-${7-idx} row-start-8 tile-bottom`))}
+                                    {renderTile(0, 'col-start-8 row-start-8 rounded-br-xl')}
 
-                                    {/* Left Col (19 to 11) */}
-                                    {[19, 18, 17, 16, 15, 14, 13, 12, 11].map((i, idx) => renderTile(i, `col-start-1 row-start-${idx+2} tile-left`))}
+                                    {/* Left Col (13 to 8) */}
+                                    {[13, 12, 11, 10, 9, 8].map((i, idx) => renderTile(i, `col-start-1 row-start-${idx+2} tile-left`))}
 
                                     {/* Center Board Interface */}
                                     <div className="center-board">
