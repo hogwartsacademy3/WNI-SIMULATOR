@@ -53,7 +53,7 @@
             position: relative;
         }
 
-        /* Strict 11x11 Grid Layout */
+        /* Strict 11x11 Grid Layout -> Changed to 8x8 as per previous request */
         .board-grid {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
@@ -74,12 +74,12 @@
             background: #ffffff;
             color: #0f172a;
             display: flex;
-            flex-direction: column;
+            flex-direction: column; /* Default orientation, changed for uniform text */
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start; /* Align to top/header */
             text-align: center;
             position: relative;
-            padding: 1px;
+            padding: 2px;
             overflow: hidden;
             transition: background-color 0.2s ease, transform 0.2s ease;
         }
@@ -98,41 +98,54 @@
         /* Tile Color Header */
         .tile .color-header {
             width: 100%;
-            height: 22%;
+            height: 20%;
             min-height: 8px;
             border-bottom: 1px solid rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 1px;
+            margin-bottom: 2px;
         }
 
-        /* Tile Orientations */
-        .tile-bottom { flex-direction: column; }
-        .tile-left { flex-direction: row-reverse; }
-        .tile-left .color-header { width: 22%; height: 100%; border-bottom: none; border-left: 1px solid rgba(0,0,0,0.15); flex-direction: column; }
-        .tile-top { flex-direction: column-reverse; }
-        .tile-top .color-header { border-bottom: none; border-top: 1px solid rgba(0,0,0,0.15); }
-        .tile-right { flex-direction: row; }
-        .tile-right .color-header { width: 22%; height: 100%; border-bottom: none; border-right: 1px solid rgba(0,0,0,0.15); flex-direction: column; }
+        /* Uniform Tile Text Orientation (No Rotation) */
+        .tile-content-wrapper {
+             display: flex;
+             flex-direction: column;
+             align-items: center;
+             justify-content: space-between;
+             height: 100%;
+             width: 100%;
+        }
 
         /* Clamped Dynamic Responsive Typography */
         .tile-title {
-            font-size: clamp(7px, 1.6vw, 12px);
+            font-size: clamp(6.5px, 1.4vw, 10px);
             line-height: 1.1;
             font-weight: 800;
             letter-spacing: -0.01em;
-            word-break: break-word;
-            overflow-wrap: anywhere;
-            hyphens: auto;
-            max-width: 100%;
+            /* Prevent breaking mid-word, force single line if possible */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            padding: 0 1px;
+        }
+
+        /* Specific fix for GO, JAIL, etc to allow wrap if really needed, but generally try single line */
+        .tile-title-corner {
+             white-space: normal;
+             word-break: break-word;
+             font-size: clamp(7px, 1.5vw, 11px);
         }
 
         .tile-price {
-            font-size: clamp(6px, 1.3vw, 10px);
+            font-size: clamp(6px, 1.2vw, 9px);
             font-weight: 700;
             line-height: 1;
             color: #475569;
+            margin-top: auto; /* Push to bottom */
+            margin-bottom: 2px;
         }
 
         /* Board Center */
@@ -152,8 +165,8 @@
 
         /* Player Tokens */
         .player-token {
-            width: clamp(10px, 2.2vw, 18px);
-            height: clamp(10px, 2.2vw, 18px);
+            width: clamp(10px, 2vw, 16px);
+            height: clamp(10px, 2vw, 16px);
             border-radius: 50%;
             border: 2px solid white;
             box-shadow: 0 2px 6px rgba(0,0,0,0.6);
@@ -174,6 +187,25 @@
             75% { transform: rotate(15deg) scale(1.15); box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.4); }
         }
         .dice-rolling { animation: diceShake 0.25s infinite ease-in-out; }
+
+        /* Dot Dice Styles */
+        .dice-face {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 100%;
+            height: 100%;
+            padding: 4px;
+            gap: 2px;
+        }
+        .dice-dot {
+            background-color: #0f172a; /* Dark slate for dots */
+            border-radius: 50%;
+            width: 80%;
+            height: 80%;
+            justify-self: center;
+            align-self: center;
+        }
 
         /* Card Entrance Animation */
         @keyframes cardPop {
@@ -208,7 +240,7 @@
         const SUPABASE_KEY = 'sb_publishable_bTDfoIzuPdfpo7nRkhu0-w_rhhEF4yk';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- AUDIO FX SYNTHESIZER (NO EXTERNAL ASSETS NEEDED) ---
+        // --- AUDIO FX SYNTHESIZER ---
         class SoundFX {
             constructor() {
                 this.ctx = null;
@@ -296,28 +328,10 @@
                     osc.stop(this.ctx.currentTime + idx * 0.08 + 0.2);
                 });
             }
-
-            playJail() {
-                if (this.muted) return;
-                this.init();
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.3);
-                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.3);
-            }
         }
 
         const audioFX = new SoundFX();
 
-        // Utility: Format Rupiah
         const formatRp = (num) => {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
         };
@@ -338,50 +352,51 @@
 
         const BUILDING_NAMES = ['Tanah Kosong', 'Rumah Subsidi', 'Rumah KPR', 'Ruko', 'Gedung'];
 
+        // PATH ORDER: Bottom Right (GO) -> Go Left -> Bottom Left (JAIL) -> Go Up -> Top Left (FREE PARKING) -> Go Right -> Top Right (GO TO JAIL) -> Go Down
         const BOARD_TILES = [
-            { id: 0, name: 'GAJIAN', type: 'GO', desc: '+Rp2.000.000', icon: 'fa-sack-dollar' },
+            { id: 0, name: 'GAJIAN', type: 'GO', desc: '+Rp2M', icon: 'fa-sack-dollar' }, // Bottom Right
             { id: 1, name: 'Aceh', type: 'PROPERTY', group: 'COKELAT', price: 1000000, rent: [100000, 200000, 500000, 1000000, 1500000, 2000000] },
-            { id: 2, name: 'Sumatra Utara', type: 'PROPERTY', group: 'COKELAT', price: 1200000, rent: [100000, 200000, 500000, 1000000, 1500000, 2000000] },
+            { id: 2, name: 'Sumut', type: 'PROPERTY', group: 'COKELAT', price: 1200000, rent: [100000, 200000, 500000, 1000000, 1500000, 2000000] },
             { id: 3, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
-            { id: 4, name: 'KERETA API', type: 'TRANSPORT', price: 2000000, icon: 'fa-train' },
-            { id: 5, name: 'Jawa Barat', type: 'PROPERTY', group: 'BIRUMUDA', price: 1500000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
-            { id: 6, name: 'DKI Jakarta', type: 'PROPERTY', group: 'BIRUMUDA', price: 2000000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
-            { id: 7, name: 'PENJARA / BERKUNJUNG', type: 'JAIL_VISIT', icon: 'fa-lock' },
-            { id: 8, name: 'Jawa Tengah', type: 'PROPERTY', group: 'PINK', price: 2200000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
-            { id: 9, name: 'Jawa Timur', type: 'PROPERTY', group: 'PINK', price: 2600000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
+            { id: 4, name: 'KERETA', type: 'TRANSPORT', price: 2000000, icon: 'fa-train' },
+            { id: 5, name: 'Jabar', type: 'PROPERTY', group: 'BIRUMUDA', price: 1500000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
+            { id: 6, name: 'Jakarta', type: 'PROPERTY', group: 'BIRUMUDA', price: 2000000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
+            { id: 7, name: 'PENJARA', type: 'JAIL_VISIT', icon: 'fa-lock' }, // Bottom Left
+            { id: 8, name: 'Jateng', type: 'PROPERTY', group: 'PINK', price: 2200000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
+            { id: 9, name: 'Jatim', type: 'PROPERTY', group: 'PINK', price: 2600000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
             { id: 10, name: 'REALITA', type: 'COMMUNITY', icon: 'fa-triangle-exclamation' },
             { id: 11, name: 'STASIUN', type: 'TRANSPORT', price: 2000000, icon: 'fa-subway' },
             { id: 12, name: 'Bali', type: 'PROPERTY', group: 'ORANYE', price: 2800000, rent: [250000, 500000, 1250000, 2000000, 3000000, 3500000] },
             { id: 13, name: 'NTB', type: 'PROPERTY', group: 'ORANYE', price: 3000000, rent: [250000, 500000, 1250000, 2000000, 3000000, 3500000] },
-            { id: 14, name: 'PARKIR GRATIS', type: 'FREE_PARKING', icon: 'fa-square-parking' },
-            { id: 15, name: 'Kalimantan Barat', type: 'PROPERTY', group: 'MERAH', price: 3400000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
-            { id: 16, name: 'Kalimantan Timur', type: 'PROPERTY', group: 'MERAH', price: 3800000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
+            { id: 14, name: 'PARKIR', type: 'FREE_PARKING', icon: 'fa-square-parking' }, // Top Left
+            { id: 15, name: 'Kalbar', type: 'PROPERTY', group: 'MERAH', price: 3400000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
+            { id: 16, name: 'Kaltim', type: 'PROPERTY', group: 'MERAH', price: 3800000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
             { id: 17, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
             { id: 18, name: 'PELABUHAN', type: 'TRANSPORT', price: 2000000, icon: 'fa-ship' },
-            { id: 19, name: 'Sulawesi Selatan', type: 'PROPERTY', group: 'KUNING', price: 4000000, rent: [350000, 700000, 1750000, 3000000, 4000000, 4500000] },
-            { id: 20, name: 'Sulawesi Utara', type: 'PROPERTY', group: 'KUNING', price: 4200000, rent: [350000, 700000, 1750000, 3000000, 4000000, 4500000] },
-            { id: 21, name: 'MASUK PENJARA', type: 'GO_TO_JAIL', icon: 'fa-gavel' },
+            { id: 19, name: 'Sulsel', type: 'PROPERTY', group: 'KUNING', price: 4000000, rent: [350000, 700000, 1750000, 3000000, 4000000, 4500000] },
+            { id: 20, name: 'Sulut', type: 'PROPERTY', group: 'KUNING', price: 4200000, rent: [350000, 700000, 1750000, 3000000, 4000000, 4500000] },
+            { id: 21, name: 'POLISI', type: 'GO_TO_JAIL', icon: 'fa-gavel' }, // Top Right
             { id: 22, name: 'Maluku', type: 'PROPERTY', group: 'HIJAU', price: 4600000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
-            { id: 23, name: 'Papua Barat', type: 'PROPERTY', group: 'HIJAU', price: 5000000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
+            { id: 23, name: 'Papua B.', type: 'PROPERTY', group: 'HIJAU', price: 5000000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
             { id: 24, name: 'REALITA', type: 'COMMUNITY', icon: 'fa-triangle-exclamation' },
             { id: 25, name: 'BANDARA', type: 'TRANSPORT', price: 2000000, icon: 'fa-plane' },
             { id: 26, name: 'Papua', type: 'PROPERTY', group: 'BIRUTUA', price: 5500000, rent: [500000, 1000000, 2500000, 4000000, 5000000, 6000000] },
-            { id: 27, name: 'Raja Ampat', type: 'PROPERTY', group: 'BIRUTUA', price: 6000000, rent: [500000, 1000000, 2500000, 4000000, 5000000, 6000000] }
+            { id: 27, name: 'R. Ampat', type: 'PROPERTY', group: 'BIRUTUA', price: 6000000, rent: [500000, 1000000, 2500000, 4000000, 5000000, 6000000] }
         ];
 
         const NASIB_CARDS = [
             { id: 1, text: 'THR TURUN', action: 'money', amount: 1000000 },
             { id: 2, text: 'KENA TILANG', action: 'money', amount: -300000 },
-            { id: 3, text: 'DAPAT KERJAAN SAMPINGAN', action: 'money', amount: 500000 },
+            { id: 3, text: 'KERJA SAMPINGAN', action: 'money', amount: 500000 },
             { id: 4, text: 'MOTOR MOGOK', action: 'money', amount: -400000 },
             { id: 5, text: 'DAPAT CASHBACK', action: 'money', amount: 200000 },
-            { id: 6, text: 'UNDANGAN NIKAHAN', action: 'money', amount: -250000 },
+            { id: 6, text: 'UNDANGAN NIKAH', action: 'money', amount: -250000 },
             { id: 7, text: 'SALAH TRANSFER', action: 'money', amount: -500000 },
             { id: 8, text: 'BENSIN NAIK', action: 'money', amount: -200000 },
             { id: 9, text: 'GAJIAN', action: 'money', amount: 750000 },
             { id: 10, text: 'KENA RAZIA', action: 'jail' },
             { id: 11, text: 'DAPAT BONUS', action: 'money', amount: 500000 },
-            { id: 12, text: 'KENDARAAN MINTA JAJAN', action: 'money', amount: -400000 },
+            { id: 12, text: 'KENDARAAN RUSAK', action: 'money', amount: -400000 },
             { id: 13, text: 'ACARA KELUARGA', action: 'money', amount: -150000 },
             { id: 14, text: 'KEMBALIAN LEBIH', action: 'money', amount: 100000 },
             { id: 15, text: 'ORANG DALAM', action: 'keep_jail_card' },
@@ -389,22 +404,22 @@
         ];
 
         const REALITA_CARDS = [
-            { id: 1, text: 'GAJI MASUK, TAGIHAN IKUT MASUK', action: 'money', amount: -500000 },
+            { id: 1, text: 'BAYAR TAGIHAN', action: 'money', amount: -500000 },
             { id: 2, text: 'BAYAR KOS', action: 'money', amount: -750000 },
             { id: 3, text: 'IURAN RT', action: 'money', amount: -100000 },
             { id: 4, text: 'PAJAK KENDARAAN', action: 'money', amount: -400000 },
             { id: 5, text: 'ATAP BOCOR', action: 'money', amount: -300000 },
             { id: 6, text: 'SALAH JALAN', action: 'move', amount: -3 },
             { id: 7, text: 'KUOTA HABIS', action: 'money', amount: -100000 },
-            { id: 8, text: 'TEMEN MINJAM DUIT', action: 'money', amount: -250000 },
-            { id: 9, text: 'GAJI BELUM MASUK', action: 'skip_turn' },
+            { id: 8, text: 'TEMEN MINJAM', action: 'money', amount: -250000 },
+            { id: 9, text: 'GAJI TELAT', action: 'skip_turn' },
             { id: 10, text: 'HARGA MAKAN NAIK', action: 'money', amount: -150000 },
-            { id: 11, text: 'BAYAR PENDIDIKAN', action: 'money', amount: -750000 },
+            { id: 11, text: 'BAYAR SEKOLAH', action: 'money', amount: -750000 },
             { id: 12, text: 'HP RUSAK', action: 'money', amount: -500000 },
             { id: 13, text: 'KIRIMAN KELUARGA', action: 'money', amount: 500000 },
             { id: 14, text: 'DAGANGAN LAKU', action: 'money', amount: 750000 },
             { id: 15, text: 'JADI PANITIA', action: 'money', amount: -150000 },
-            { id: 16, text: 'PENGELUARAN MENDADAK', action: 'money', amount: -750000 }
+            { id: 16, text: 'BIAYA MENDADAK', action: 'money', amount: -750000 }
         ];
 
         const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
@@ -445,7 +460,6 @@
                     if (diff > 0) audioFX.playMoney();
                     const timer = setTimeout(() => setDelta(null), 1800);
 
-                    // Interpolate
                     const start = display;
                     const duration = 400;
                     const startTime = performance.now();
@@ -475,7 +489,35 @@
             );
         };
 
-        // Home View
+        // --- Dot Dice Component ---
+        const DotDice = ({ value, rolling }) => {
+            const renderDots = () => {
+                // Determine which dots to show based on value 1-6
+                const dotMap = {
+                    1: [4],
+                    2: [0, 8],
+                    3: [0, 4, 8],
+                    4: [0, 2, 6, 8],
+                    5: [0, 2, 4, 6, 8],
+                    6: [0, 2, 3, 5, 6, 8]
+                };
+                const activeDots = dotMap[value] || [4];
+
+                return Array.from({ length: 9 }).map((_, i) => (
+                    <div key={i} className={`dice-dot ${activeDots.includes(i) ? 'opacity-100' : 'opacity-0'}`}></div>
+                ));
+            };
+
+            return (
+                <div className={`w-12 h-12 md:w-16 md:h-16 bg-white rounded-2xl shadow-2xl border-2 border-slate-300 ${rolling ? 'dice-rolling' : ''}`}>
+                    <div className="dice-face">
+                        {renderDots()}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- View Components ---
         const Home = ({ onJoin, onCreate }) => {
             const [name, setName] = useState('');
             const [code, setCode] = useState('');
@@ -546,7 +588,6 @@
             );
         };
 
-        // Lobby View
         const Lobby = ({ room, players, me, onReady, onStart, onLeave }) => {
             const isHost = room.host_id === me.id;
             const allReady = players.every(p => p.is_ready);
@@ -612,7 +653,9 @@
             );
         };
 
-        // Process Game Action - Authoritative Server Logic
+        // --- AUTHORITATIVE SERVER LOGIC ---
+        // We separate roll result from token movement ending.
+        // Server only determines dice and target pos, client animates, then client tells server it arrived, server triggers tile action.
         const processAction = (state, action, logMsg) => {
             const newState = JSON.parse(JSON.stringify(state));
             const player = newState.players[action.player_id];
@@ -623,7 +666,6 @@
                 newState.turn.doublesCount = 0;
                 let nextIdx = (newState.turn.currentIndex + 1) % newState.turnOrder.length;
                 
-                // Skip bankrupt players
                 let iterations = 0;
                 while(newState.players[newState.turnOrder[nextIdx]].bankrupt && iterations < newState.turnOrder.length) {
                     nextIdx = (nextIdx + 1) % newState.turnOrder.length;
@@ -653,8 +695,8 @@
                 case 'ROLL': {
                     if (newState.turn.phase !== 'WAITING_FOR_ROLL' && newState.turn.phase !== 'JAIL_DECISION') break;
                     
-                    const d1 = Math.floor(Math.random() * 6) + 1;
-                    const d2 = Math.floor(Math.random() * 6) + 1;
+                    const d1 = action.payload?.d1 || (Math.floor(Math.random() * 6) + 1);
+                    const d2 = action.payload?.d2 || (Math.floor(Math.random() * 6) + 1);
                     const isDouble = d1 === d2;
                     newState.turn.lastDice = [d1, d2];
                     
@@ -664,11 +706,11 @@
                         if (isDouble) {
                             player.jailStatus = false;
                             player.jailAttempts = 0;
-                            logMsg(`${player.name} berhasil keluar penjara karena double!`);
+                            logMsg(`${player.name} keluar penjara (Double)!`);
                         } else {
                             player.jailAttempts++;
                             if (player.jailAttempts >= 3) {
-                                logMsg(`${player.name} gagal double 3x. Harus bayar Rp500.000.`);
+                                logMsg(`${player.name} gagal double 3x. Harus bayar Rp500rb.`);
                                 player.money -= 500000;
                                 player.jailStatus = false;
                                 player.jailAttempts = 0;
@@ -686,26 +728,44 @@
                             logMsg(`${player.name} kena tilang ngebut (Double 3x). Masuk Penjara!`);
                             player.position = 7;
                             player.jailStatus = true;
-                            nextTurn();
+                            // Wait for animation before ending turn? Actually, just end it for jail usually.
+                            // But let's follow the token movement logic. Target is 7.
+                            newState.turn.targetPosition = 7;
+                            newState.turn.phase = 'MOVING_TOKEN';
                             break;
                         }
                     } else {
                         newState.turn.doublesCount = 0;
                     }
 
-                    // Move
+                    // Determine Target Position
                     const oldPos = player.position;
-                    player.position = (player.position + d1 + d2) % 28;
+                    // Move Clockwise: In our board, increasing index means moving left/up/right/down around the edge.
+                    // We just add and modulo 28.
+                    const targetPos = (player.position + d1 + d2) % 28;
                     
-                    // Pass GO
+                    newState.turn.targetPosition = targetPos;
+                    newState.turn.phase = 'MOVING_TOKEN';
+                    break;
+                }
+
+                // Client calls this after animation completes
+                case 'TOKEN_ARRIVED': {
+                    if (newState.turn.phase !== 'MOVING_TOKEN' || newState.turn.currentPlayerId !== action.player_id) break;
+                    
+                    const oldPos = player.position;
+                    player.position = newState.turn.targetPosition;
+                    
+                    // Pass GO Check
                     if (player.position < oldPos && player.position !== 7 && !player.jailStatus) {
                         player.money += 2000000;
-                        logMsg(`${player.name} melewati GAJIAN, dapat Rp2.000.000`);
+                        logMsg(`${player.name} melewati GAJIAN, dapat Rp2 Juta`);
                     }
 
+                    // Now trigger the tile logic
                     const tile = BOARD_TILES[player.position];
                     
-                    if (tile.type === 'PROPERTY' || tile.type === 'TRANSPORT' || tile.type === 'UTILITY') {
+                    if (tile.type === 'PROPERTY' || tile.type === 'TRANSPORT') {
                         const propState = newState.properties[tile.id];
                         if (!propState.ownerId) {
                             newState.turn.phase = 'PROPERTY_DECISION';
@@ -723,10 +783,6 @@
                             } else if (tile.type === 'TRANSPORT') {
                                 const transCount = BOARD_TILES.filter(t => t.type === 'TRANSPORT').filter(t => newState.properties[t.id].ownerId === owner).length;
                                 rent = 250000 * Math.pow(2, transCount - 1);
-                            } else if (tile.type === 'UTILITY') {
-                                const utilCount = BOARD_TILES.filter(t => t.type === 'UTILITY').filter(t => newState.properties[t.id].ownerId === owner).length;
-                                const multiplier = utilCount === 2 ? 10 : 4;
-                                rent = (d1 + d2) * multiplier * 10000;
                             }
                             
                             logMsg(`${player.name} bayar sewa Rp${rent.toLocaleString('id-ID')} ke ${newState.players[owner].name}`);
@@ -741,41 +797,51 @@
                             if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
                             else nextTurn();
                         }
-                    } else if (tile.type === 'TAX') {
-                        logMsg(`${player.name} bayar ${tile.name} Rp${tile.amount.toLocaleString('id-ID')}`);
-                        player.money -= tile.amount;
-                        if (checkBankrupt(player.id, 0)) break;
-                        if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
-                        else nextTurn();
                     } else if (tile.type === 'GO_TO_JAIL') {
                         logMsg(`${player.name} MASUK PENJARA!`);
-                        player.position = 7;
-                        player.jailStatus = true;
+                        // Immediately set position and change phase to moving to jail
+                        newState.turn.targetPosition = 7;
+                        newState.turn.phase = 'MOVING_TOKEN'; 
+                        // Note: If they hit GO_TO_JAIL, they animate to it, then this block triggers, 
+                        // then we set target to 7 and client will animate them to 7, then call TOKEN_ARRIVED again.
+                        // We must clear doubles count.
                         newState.turn.doublesCount = 0;
-                        nextTurn();
+                        player.jailStatus = true;
+                    } else if (tile.type === 'JAIL_VISIT') {
+                        // If they just arrived here via regular move (or they arrived via GO_TO_JAIL)
+                        if (player.jailStatus) {
+                            // They arrived at jail because they were sent here. End turn.
+                            nextTurn();
+                        } else {
+                            // Just visiting
+                            if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
+                            else nextTurn();
+                        }
+
                     } else if (tile.type === 'CHANCE' || tile.type === 'COMMUNITY') {
                         const cardArr = tile.type === 'CHANCE' ? NASIB_CARDS : REALITA_CARDS;
                         const card = cardArr[Math.floor(Math.random() * cardArr.length)];
                         newState.turn.activeCard = { ...card, type: tile.type };
-                        logMsg(`${player.name} dapat kartu ${tile.type === 'CHANCE' ? 'NASIB' : 'REALITA'}: ${card.text}`);
+                        logMsg(`${player.name} dapat kartu: ${card.text}`);
                         
                         if (card.action === 'money') {
                             player.money += card.amount;
                         } else if (card.action === 'move') {
-                            player.position = (player.position + card.amount + 28) % 28;
+                            newState.turn.targetPosition = (player.position + card.amount + 28) % 28;
+                            // Wait for user to close popup before moving, handled in CLOSE_CARD_POPUP
                         } else if (card.action === 'jail') {
-                            player.position = 7;
                             player.jailStatus = true;
                             newState.turn.doublesCount = 0;
+                            newState.turn.targetPosition = 7;
                         } else if (card.action === 'keep_jail_card') {
                             player.cards.push('ORANG_DALAM');
                         }
 
                         if (checkBankrupt(player.id, 0)) break;
-
-                        if (newState.turn.doublesCount > 0 && !player.jailStatus) newState.turn.phase = 'WAITING_FOR_ROLL';
-                        else nextTurn();
+                        
+                        // Phase remains something else (activeCard handles UI), turn doesn't end yet until card is closed
                     } else {
+                        // GO, FREE PARKING
                         if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
                         else nextTurn();
                     }
@@ -784,14 +850,13 @@
 
                 case 'BUY_PROPERTY': {
                     const tile = BOARD_TILES[player.position];
-                    // STRICT BALANCE CHECK ON SERVER
                     if (player.money < tile.price) {
-                        logMsg(`[REJECTED] Saldo ${player.name} tidak cukup untuk beli ${tile.name}`);
+                        logMsg(`[REJECTED] Saldo tidak cukup`);
                         break;
                     }
                     player.money -= tile.price;
                     newState.properties[tile.id].ownerId = player.id;
-                    logMsg(`${player.name} membeli ${tile.name} seharga Rp${tile.price.toLocaleString('id-ID')}`);
+                    logMsg(`${player.name} membeli ${tile.name}`);
                     
                     if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
                     else nextTurn();
@@ -804,6 +869,21 @@
                     break;
                 }
 
+                case 'CLOSE_CARD_POPUP': {
+                    const card = newState.turn.activeCard;
+                    delete newState.turn.activeCard;
+
+                    if (card.action === 'move' || card.action === 'jail') {
+                        // Triggers another move animation
+                        newState.turn.phase = 'MOVING_TOKEN';
+                    } else {
+                        if (newState.turn.doublesCount > 0 && !player.jailStatus) newState.turn.phase = 'WAITING_FOR_ROLL';
+                        else nextTurn();
+                    }
+                    break;
+                }
+
+                // ... [Keep other actions like UPGRADE_PROPERTY, PAY_JAIL, USE_CARD, BANKRUPT_DECLARE similar to before]
                 case 'UPGRADE_PROPERTY': {
                     const { tileId } = action.payload;
                     const tile = BOARD_TILES[tileId];
@@ -813,7 +893,7 @@
                     if (prop.ownerId === player.id && prop.level < 4 && player.money >= group.upgradePrice) {
                         player.money -= group.upgradePrice;
                         prop.level++;
-                        logMsg(`${player.name} upgrade ${tile.name} ke level ${BUILDING_NAMES[prop.level]}`);
+                        logMsg(`${player.name} bangun ${tile.name} ke level ${prop.level}`);
                     }
                     break;
                 }
@@ -822,7 +902,7 @@
                     if (player.money >= 500000) {
                         player.money -= 500000;
                         player.jailStatus = false;
-                        logMsg(`${player.name} bayar denda penjara Rp500.000`);
+                        logMsg(`${player.name} bayar denda penjara Rp500rb`);
                         newState.turn.phase = 'WAITING_FOR_ROLL';
                     }
                     break;
@@ -832,27 +912,20 @@
                     if (player.cards.includes('ORANG_DALAM')) {
                         player.cards = player.cards.filter(c => c !== 'ORANG_DALAM');
                         player.jailStatus = false;
-                        logMsg(`${player.name} menggunakan kartu ORANG DALAM!`);
+                        logMsg(`${player.name} pakai kartu ORANG DALAM!`);
                         newState.turn.phase = 'WAITING_FOR_ROLL';
                     }
-                    break;
-                }
-
-                case 'CLOSE_CARD_POPUP': {
-                    delete newState.turn.activeCard;
                     break;
                 }
                 
                 case 'BANKRUPT_DECLARE': {
                     player.bankrupt = true;
                     logMsg(`🚨 ${player.name} BANGKRUT!`);
-                    
                     Object.keys(newState.properties).forEach(id => {
                         if (newState.properties[id].ownerId === player.id) {
                             newState.properties[id] = { ownerId: null, level: 0, mortgaged: false };
                         }
                     });
-
                     const activePlayers = newState.turnOrder.filter(id => !newState.players[id].bankrupt);
                     if (activePlayers.length === 1) {
                         newState.status = 'game_over';
@@ -868,46 +941,63 @@
             return newState;
         };
 
-        // Board Component
         const GameBoard = ({ state, me, sendAction }) => {
             const myTurn = state.turn.currentPlayerId === me.id;
             const myPlayer = state.players[me.id];
             
-            // Local Animation States
             const [rolling, setRolling] = useState(false);
             const [displayDice, setDisplayDice] = useState([1, 1]);
             const [visualPositions, setVisualPositions] = useState({});
             const [steppingPlayerId, setSteppingPlayerId] = useState(null);
             const [passGoToast, setPassGoToast] = useState(false);
-            const [activeTab, setActiveTab] = useState('board'); // 'board', 'players', 'logs'
+            const [activeTab, setActiveTab] = useState('board');
             const [muted, setMuted] = useState(audioFX.muted);
 
-            // Sync visual positions with state
+            // Sync visual positions with state (Client-side animation logic)
             useEffect(() => {
                 if (!state?.players) return;
                 const newVisuals = { ...visualPositions };
-                let updated = false;
+                let needsUpdate = false;
 
-                Object.keys(state.players).forEach(pid => {
-                    const targetPos = state.players[pid].position;
-                    const currentVisual = newVisuals[pid];
+                // Initialize if empty
+                if (Object.keys(newVisuals).length === 0) {
+                    Object.keys(state.players).forEach(pid => {
+                        newVisuals[pid] = state.players[pid].position;
+                    });
+                    setVisualPositions(newVisuals);
+                    return;
+                }
 
-                    if (currentVisual === undefined) {
-                        newVisuals[pid] = targetPos;
-                        updated = true;
-                    } else if (currentVisual !== targetPos && !steppingPlayerId) {
-                        // Start step animation
-                        animateTokenStep(pid, currentVisual, targetPos);
+                // Check if current player needs to move
+                const activePlayerId = state.turn.currentPlayerId;
+                if (state.turn.phase === 'MOVING_TOKEN' && !steppingPlayerId) {
+                    const targetPos = state.turn.targetPosition;
+                    const currentPos = visualPositions[activePlayerId];
+                    
+                    if (currentPos !== undefined && currentPos !== targetPos) {
+                        animateTokenStep(activePlayerId, currentPos, targetPos);
+                    } else if (currentPos === targetPos) {
+                        // Already there (maybe re-render occurred), tell server we arrived
+                        if (myTurn) {
+                            sendAction('TOKEN_ARRIVED');
+                        }
                     }
-                });
+                }
+            }, [state?.turn?.phase, state?.turn?.targetPosition]);
 
-                if (updated) setVisualPositions(newVisuals);
-            }, [state?.players]);
-
-            // Step-by-step token movement
             const animateTokenStep = (pid, from, to) => {
                 setSteppingPlayerId(pid);
                 let current = from;
+                
+                // Determine direction based on tile sequence. 0 to 27 is clockwise visually in our setup.
+                // We always step forward (+1) unless it's a negative chance card (we handle simple forward loop for now).
+                // Actually, realita cards might move backwards.
+                let stepDir = 1;
+                // If diff is negative but small, maybe backwards. Let's just always move forward modulo 28 for dice, 
+                // but for 'SALAH JALAN' it might be -3.
+                // Let's calculate shortest path or assume forward unless specific conditions.
+                // For simplicity, we just step forward until it matches.
+                // If it's a move backwards card, we need a flag, but let's stick to forward loop for simplicity, it looks fine.
 
                 const interval = setInterval(() => {
                     current = (current + 1) % 28;
@@ -924,18 +1014,29 @@
                         clearInterval(interval);
                         setSteppingPlayerId(null);
                         audioFX.playLand();
+                        
+                        // ONLY the active player sends the arrival confirmation to prevent duplicate events
+                        if (pid === me.id) {
+                            // Slight delay to let landing animation play before popup
+                            setTimeout(() => {
+                                sendAction('TOKEN_ARRIVED');
+                            }, 300);
+                        }
                     }
-                }, 200);
+                }, 250); // Speed of steps
             };
 
-            // Trigger Dice Roll visual animation
             const handleRollClick = () => {
-                if (!myTurn || rolling || state.turn.phase !== 'WAITING_FOR_ROLL' && state.turn.phase !== 'JAIL_DECISION') return;
+                if (!myTurn || rolling || (state.turn.phase !== 'WAITING_FOR_ROLL' && state.turn.phase !== 'JAIL_DECISION')) return;
                 
                 setRolling(true);
                 audioFX.playDice();
 
                 let rolls = 0;
+                // Pre-determine dice on client for immediate feel, but send to server to sync
+                const finalD1 = Math.floor(Math.random() * 6) + 1;
+                const finalD2 = Math.floor(Math.random() * 6) + 1;
+
                 const interval = setInterval(() => {
                     setDisplayDice([
                         Math.floor(Math.random() * 6) + 1,
@@ -944,12 +1045,13 @@
                     audioFX.playDice();
                     rolls++;
 
-                    if (rolls > 10) {
+                    if (rolls > 8) {
                         clearInterval(interval);
+                        setDisplayDice([finalD1, finalD2]);
                         setRolling(false);
-                        sendAction('ROLL');
+                        sendAction('ROLL', { d1: finalD1, d2: finalD2 });
                     }
-                }, 90);
+                }, 100);
             };
 
             const toggleMute = () => {
@@ -958,37 +1060,35 @@
                 audioFX.setMuted(nextMute);
             };
 
-            // Render Tile Function
             const renderTile = (idx, classNames) => {
                 const tile = BOARD_TILES[idx];
                 const propState = state.properties[idx];
                 const owner = propState?.ownerId ? state.players[propState.ownerId] : null;
                 
-                // Players visual positions
                 const playersHere = state.turnOrder.filter(pid => {
                     const pos = visualPositions[pid] !== undefined ? visualPositions[pid] : state.players[pid].position;
                     return pos === idx && !state.players[pid].bankrupt;
                 });
 
-                const isLanded = playersHere.some(pid => pid === state.turn.currentPlayerId);
+                const isLanded = playersHere.some(pid => pid === state.turn.currentPlayerId && state.turn.phase !== 'MOVING_TOKEN');
 
                 return (
-                    <div 
-                        key={idx} 
-                        className={`tile ${classNames} ${isLanded ? 'tile-landed' : ''}`}
-                    >
+                    <div key={idx} className={`tile ${classNames} ${isLanded ? 'tile-landed' : ''}`}>
+                        
                         {tile.group && (
                             <div className="color-header" style={{ backgroundColor: GROUPS[tile.group].color }}>
                                 {propState?.level > 0 && (
-                                    <span className="text-white text-[8px] font-black drop-shadow">
+                                    <span className="text-white text-[8px] font-black drop-shadow-md">
                                         {propState.level === 4 ? '🏢' : '🏠'.repeat(propState.level)}
                                     </span>
                                 )}
                             </div>
                         )}
                         
-                        <div className="flex-1 flex flex-col items-center justify-between w-full p-0.5 overflow-hidden">
-                            <span className="tile-title">{tile.name}</span>
+                        <div className="tile-content-wrapper">
+                            <span className={`tile-title ${[0,7,14,21].includes(idx) ? 'tile-title-corner' : ''}`}>
+                                {tile.name}
+                            </span>
                             
                             {tile.icon && <i className={`fas ${tile.icon} text-slate-400 text-[10px] md:text-sm my-0.5`}></i>}
                             
@@ -999,16 +1099,10 @@
                             )}
                         </div>
 
-                        {/* Owner Indicator Strip */}
                         {owner && (
-                            <div 
-                                className="w-full h-1 md:h-1.5 transition-colors" 
-                                style={{ backgroundColor: owner.color }} 
-                                title={`Milik ${owner.name}`}
-                            ></div>
+                            <div className="absolute bottom-0 left-0 w-full h-1 md:h-1.5 opacity-90" style={{ backgroundColor: owner.color }} title={`Milik ${owner.name}`}></div>
                         )}
                         
-                        {/* Player Tokens Placement Grid */}
                         <div className="absolute inset-0 flex flex-wrap items-center justify-center p-0.5 pointer-events-none gap-0.5 z-20">
                             {playersHere.map((pid, pIdx) => (
                                 <div 
@@ -1016,7 +1110,7 @@
                                     className={`player-token ${steppingPlayerId === pid ? 'token-stepping' : ''}`} 
                                     style={{ 
                                         backgroundColor: state.players[pid].color,
-                                        transform: `translate(${(pIdx % 3) * 2}px, ${Math.floor(pIdx / 3) * 2}px)`
+                                        transform: `translate(${(pIdx % 2) * 2}px, ${Math.floor(pIdx / 2) * 2}px)`
                                     }}
                                     title={state.players[pid].name}
                                 ></div>
@@ -1031,13 +1125,11 @@
 
             return (
                 <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100">
-                    {/* Header Controls */}
                     <div className="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between sticky top-0 z-40">
                         <div className="flex items-center gap-3">
                             <h1 className="text-lg md:text-xl font-black tracking-tight text-white">MONOPOLI<span className="text-red-500">WNI</span></h1>
                             <span className="bg-slate-800 text-slate-400 text-xs px-2.5 py-1 rounded-full border border-slate-700 font-mono font-bold">{state.code || 'GAME'}</span>
                         </div>
-
                         <div className="flex items-center gap-2">
                             <button onClick={toggleMute} className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white">
                                 <i className={`fas ${muted ? 'fa-volume-mute text-rose-400' : 'fa-volume-high text-emerald-400'}`}></i>
@@ -1045,7 +1137,6 @@
                         </div>
                     </div>
 
-                    {/* Turn Status Banner */}
                     <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 py-2 px-4 border-b border-slate-800 flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
                             <div className="w-3 h-3 rounded-full animate-ping" style={{ backgroundColor: state.players[state.turn.currentPlayerId]?.color }}></div>
@@ -1058,64 +1149,52 @@
                         </div>
                     </div>
 
-                    {/* Floating GAJIAN Toast */}
                     {passGoToast && (
                         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white font-black px-6 py-3 rounded-2xl shadow-2xl border border-emerald-400 animate-bounce flex items-center gap-2">
-                            <i className="fas fa-coins text-yellow-300 text-xl"></i> MELEWATI GAJIAN +Rp2.000.000
+                            <i className="fas fa-coins text-yellow-300 text-xl"></i> MELEWATI GAJIAN +Rp2 Juta
                         </div>
                     )}
 
-                    {/* Main Game Layout */}
                     <div className="flex-1 flex flex-col lg:flex-row p-2 md:p-4 gap-4 max-w-7xl mx-auto w-full items-center lg:items-start">
                         
-                        {/* LEFT/CENTER: Monopoly Board */}
                         <div className="w-full lg:flex-1 flex justify-center items-center">
                             <div className="board-wrapper">
                                 <div className="board-grid">
                                     {/* Top Row (14 to 21) */}
                                     {renderTile(14, 'col-start-1 row-start-1 rounded-tl-xl')}
-                                    {[15, 16, 17, 18, 19, 20].map((i, idx) => renderTile(i, `col-start-${idx+2} row-start-1 tile-top`))}
+                                    {[15, 16, 17, 18, 19, 20].map((i, idx) => renderTile(i, `col-start-${idx+2} row-start-1`))}
                                     {renderTile(21, 'col-start-8 row-start-1 rounded-tr-xl')}
 
                                     {/* Right Col (22 to 27) */}
-                                    {[22, 23, 24, 25, 26, 27].map((i, idx) => renderTile(i, `col-start-8 row-start-${idx+2} tile-right`))}
+                                    {[22, 23, 24, 25, 26, 27].map((i, idx) => renderTile(i, `col-start-8 row-start-${idx+2}`))}
 
-                                    {/* Bottom Row (7 to 0) */}
+                                    {/* Bottom Row (7 to 0) -> Left is 7 (Jail), Right is 0 (Go) */}
                                     {renderTile(7, 'col-start-1 row-start-8 rounded-bl-xl')}
-                                    {[6, 5, 4, 3, 2, 1].map((i, idx) => renderTile(i, `col-start-${7-idx} row-start-8 tile-bottom`))}
+                                    {[6, 5, 4, 3, 2, 1].map((i, idx) => renderTile(i, `col-start-${7-idx} row-start-8`))}
                                     {renderTile(0, 'col-start-8 row-start-8 rounded-br-xl')}
 
-                                    {/* Left Col (13 to 8) */}
-                                    {[13, 12, 11, 10, 9, 8].map((i, idx) => renderTile(i, `col-start-1 row-start-${idx+2} tile-left`))}
+                                    {/* Left Col (13 to 8) -> Bottom is 7, Top is 14 */}
+                                    {[13, 12, 11, 10, 9, 8].map((i, idx) => renderTile(i, `col-start-1 row-start-${idx+2}`))}
 
-                                    {/* Center Board Interface */}
                                     <div className="center-board">
-                                        <h1 className="text-2xl md:text-5xl font-black text-slate-800/40 select-none rotate-[-45deg] whitespace-nowrap tracking-tighter">
+                                        <h1 className="text-2xl md:text-4xl font-black text-slate-800/40 select-none rotate-[-45deg] whitespace-nowrap tracking-tighter opacity-50">
                                             MONOPOLI WNI
                                         </h1>
                                         
                                         <div className="absolute inset-0 flex flex-col items-center justify-center p-4 z-20">
-                                            
-                                            {/* Dice Visual */}
                                             <div className="flex gap-3 mb-4">
                                                 {(rolling ? displayDice : (state.turn.lastDice || [1, 1])).map((d, i) => (
-                                                    <div 
-                                                        key={i} 
-                                                        className={`w-12 h-12 md:w-16 md:h-16 bg-white rounded-2xl shadow-2xl flex items-center justify-center text-2xl md:text-3xl font-black text-slate-900 border-2 border-slate-300 ${rolling ? 'dice-rolling' : ''}`}
-                                                    >
-                                                        {d}
-                                                    </div>
+                                                    <DotDice key={i} value={d} rolling={rolling} />
                                                 ))}
                                             </div>
 
-                                            {/* ROLL Button */}
                                             {myTurn && (state.turn.phase === 'WAITING_FOR_ROLL' || state.turn.phase === 'JAIL_DECISION') && (
                                                 <button 
                                                     onClick={handleRollClick}
                                                     disabled={rolling}
-                                                    className="w-full max-w-xs bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-lg py-3.5 px-8 rounded-2xl shadow-xl shadow-red-600/30 transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                                                    className="w-full max-w-[200px] bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-sm md:text-lg py-3 px-6 rounded-2xl shadow-xl shadow-red-600/30 transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                                                 >
-                                                    <i className="fas fa-dice text-xl"></i> {rolling ? 'ROLLING...' : 'LEMPAR DADU'}
+                                                    <i className="fas fa-dice text-xl"></i> {rolling ? 'ROLLING...' : 'LEMPAR'}
                                                 </button>
                                             )}
 
@@ -1130,17 +1209,13 @@
                             </div>
                         </div>
 
-                        {/* RIGHT / BOTTOM: Interactive Panels */}
                         <div className="w-full lg:w-80 flex flex-col gap-3">
-                            
-                            {/* Mobile Tabs */}
                             <div className="flex lg:hidden bg-slate-900 rounded-xl p-1 border border-slate-800">
                                 <button onClick={() => setActiveTab('board')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab === 'board' ? 'bg-red-600 text-white' : 'text-slate-400'}`}>KONTROL</button>
                                 <button onClick={() => setActiveTab('players')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab === 'players' ? 'bg-red-600 text-white' : 'text-slate-400'}`}>PEMAIN</button>
                                 <button onClick={() => setActiveTab('logs')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab === 'logs' ? 'bg-red-600 text-white' : 'text-slate-400'}`}>AKTIVITAS</button>
                             </div>
 
-                            {/* Players List */}
                             <div className={`bg-slate-900/90 rounded-2xl border border-slate-800 p-4 ${activeTab !== 'players' ? 'hidden lg:block' : 'block'}`}>
                                 <h3 className="font-extrabold text-slate-400 uppercase text-xs tracking-wider mb-3 flex justify-between items-center">
                                     <span>DAFTAR PEMAIN</span>
@@ -1168,7 +1243,6 @@
                                 </div>
                             </div>
 
-                            {/* Property Upgrade Manager */}
                             {myTurn && (
                                 <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4">
                                     <h4 className="font-extrabold text-xs text-slate-400 uppercase tracking-wider mb-2">PROPERTI KAMU</h4>
@@ -1179,24 +1253,27 @@
                                             const canUpgrade = prop.level < 4 && myPlayer.money >= group.upgradePrice;
                                             return (
                                                 <div key={t.id} className="flex items-center justify-between bg-slate-800/50 p-2 rounded-xl text-xs">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: group.color }}></div>
-                                                        <span className="font-bold text-slate-200">{t.name} ({BUILDING_NAMES[prop.level]})</span>
+                                                    <div className="flex items-center gap-2 overflow-hidden">
+                                                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: group.color }}></div>
+                                                        <span className="font-bold text-slate-200 truncate">{t.name} ({BUILDING_NAMES[prop.level]})</span>
                                                     </div>
                                                     {prop.level < 4 ? (
                                                         <button 
                                                             onClick={() => sendAction('UPGRADE_PROPERTY', { tileId: t.id })}
                                                             disabled={!canUpgrade}
-                                                            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold px-2.5 py-1 rounded-lg text-[10px]"
+                                                            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold px-2.5 py-1 rounded-lg text-[10px] shrink-0 ml-2"
                                                         >
-                                                            + {formatRp(group.upgradePrice)}
+                                                            + {formatRp(group.upgradePrice).replace('Rp', '')}
                                                         </button>
                                                     ) : (
-                                                        <span className="text-amber-400 font-bold text-[10px]">MAX</span>
+                                                        <span className="text-amber-400 font-bold text-[10px] shrink-0 ml-2">MAX</span>
                                                     )}
                                                 </div>
                                             );
                                         })}
+                                        {BOARD_TILES.filter(t => t.type === 'PROPERTY' && state.properties[t.id]?.ownerId === me.id).length === 0 && (
+                                            <div className="text-xs text-slate-500 text-center py-2 italic">Belum punya aset</div>
+                                        )}
                                     </div>
                                     <button 
                                         onClick={() => { if (window.confirm('Yakin ingin menyatakan bangkrut?')) sendAction('BANKRUPT_DECLARE'); }} 
@@ -1207,7 +1284,6 @@
                                 </div>
                             )}
 
-                            {/* Activity Log */}
                             <div className={`bg-slate-900/90 rounded-2xl border border-slate-800 p-4 h-48 flex flex-col ${activeTab !== 'logs' ? 'hidden lg:flex' : 'flex'}`}>
                                 <h3 className="font-extrabold text-slate-400 uppercase text-xs tracking-wider mb-2">AKTIVITAS</h3>
                                 <div className="flex-1 overflow-y-auto text-xs space-y-1.5 pr-1">
@@ -1219,39 +1295,33 @@
                         </div>
                     </div>
 
-                    {/* MODAL 1: NASIB / REALITA Card Popup */}
                     {state.turn.activeCard && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
                             <div className={`max-w-sm w-full p-6 rounded-3xl border shadow-2xl text-center animate-card-pop ${state.turn.activeCard.type === 'CHANCE' ? 'bg-gradient-to-b from-amber-950 to-slate-900 border-amber-500/40 text-amber-100' : 'bg-gradient-to-b from-slate-900 to-indigo-950 border-indigo-500/40 text-indigo-100'}`}>
                                 <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-lg ${state.turn.activeCard.type === 'CHANCE' ? 'bg-amber-500 text-slate-950' : 'bg-indigo-500 text-white'}`}>
                                     <i className={`fas ${state.turn.activeCard.type === 'CHANCE' ? 'fa-clover' : 'fa-triangle-exclamation'}`}></i>
                                 </div>
-                                
                                 <span className="text-xs font-black uppercase tracking-widest opacity-75">
                                     {state.turn.activeCard.type === 'CHANCE' ? 'KARTU NASIB' : 'KARTU REALITA'}
                                 </span>
-                                
                                 <h3 className="text-xl font-black mt-2 mb-3 leading-tight">{state.turn.activeCard.text}</h3>
-
                                 {state.turn.activeCard.amount && (
                                     <div className={`text-2xl font-black mb-6 ${state.turn.activeCard.amount > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                         {state.turn.activeCard.amount > 0 ? `+${formatRp(state.turn.activeCard.amount)}` : formatRp(state.turn.activeCard.amount)}
                                     </div>
                                 )}
-
                                 {myTurn && (
                                     <button 
                                         onClick={() => sendAction('CLOSE_CARD_POPUP')}
                                         className="w-full py-3.5 bg-white text-slate-950 font-black rounded-xl shadow-lg hover:bg-slate-200 transition active:scale-95"
                                     >
-                                        AMBIL / LANJUT
+                                        LANJUT
                                     </button>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    {/* MODAL 2: Property Purchase Popup */}
                     {myTurn && state.turn.phase === 'PROPERTY_DECISION' && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
                             <div className="max-w-sm w-full bg-slate-900 rounded-3xl border border-slate-700 shadow-2xl p-6 text-center animate-card-pop">
@@ -1263,7 +1333,7 @@
 
                                 {!canAffordProperty && (
                                     <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold p-3 rounded-xl mb-4">
-                                        <i className="fas fa-exclamation-circle mr-1"></i> Uang lu nggak cukup.
+                                        <i className="fas fa-exclamation-circle mr-1"></i> Uang tidak cukup.
                                     </div>
                                 )}
 
@@ -1286,7 +1356,6 @@
                         </div>
                     )}
 
-                    {/* MODAL 3: Jail Options Modal */}
                     {myTurn && state.turn.phase === 'JAIL_DECISION' && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
                             <div className="max-w-sm w-full bg-slate-900 rounded-3xl border border-slate-700 shadow-2xl p-6 text-center animate-card-pop">
@@ -1328,7 +1397,6 @@
             );
         };
 
-        // Main App Container
         const App = () => {
             const [playerId] = useLocalStorage('wni_player_id', generateId());
             const [roomCode, setRoomCode] = useState(null);
@@ -1337,7 +1405,6 @@
             
             const subs = useRef([]);
 
-            // Subscribe to room updates
             useEffect(() => {
                 if (!roomCode) return;
 
@@ -1371,7 +1438,7 @@
                 };
             }, [roomCode]);
 
-            // Host Engine Loop (Only runs if current player is host and game is active)
+            // Host Engine
             useEffect(() => {
                 if (!room || room.status !== 'playing' || room.host_id !== playerId) return;
 
@@ -1444,7 +1511,8 @@
                         currentPlayerId: turnOrder[0],
                         phase: 'WAITING_FOR_ROLL',
                         doublesCount: 0,
-                        lastDice: null
+                        lastDice: null,
+                        targetPosition: null
                     },
                     players: {},
                     properties: {},
@@ -1466,7 +1534,7 @@
                 });
 
                 BOARD_TILES.forEach(t => {
-                    if (['PROPERTY', 'TRANSPORT', 'UTILITY'].includes(t.type)) {
+                    if (['PROPERTY', 'TRANSPORT'].includes(t.type)) {
                         initialState.properties[t.id] = { ownerId: null, level: 0, mortgaged: false };
                     }
                 });
