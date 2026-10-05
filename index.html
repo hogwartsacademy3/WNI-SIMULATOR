@@ -287,6 +287,12 @@ CREATE POLICY "Enable read/write for all users" ON wni_players FOR ALL USING (tr
 CREATE POLICY "Enable read/write for all users" ON wni_actions FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable read/write for all users" ON wni_messages FOR ALL USING (true) WITH CHECK (true);
 
+-- ENABLE REALTIME (WAJIB UNTUK MULTIPLAYER)
+ALTER PUBLICATION supabase_realtime ADD TABLE wni_rooms;
+ALTER PUBLICATION supabase_realtime ADD TABLE wni_players;
+ALTER PUBLICATION supabase_realtime ADD TABLE wni_actions;
+ALTER PUBLICATION supabase_realtime ADD TABLE wni_messages;
+
 -- Function to cleanup old rooms automatically
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 -- SELECT cron.schedule('0 * * * *', $$DELETE FROM wni_rooms WHERE created_at < now() - interval '24 hours'$$);
@@ -1029,7 +1035,15 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
             };
 
             const handleReady = async (isReady) => {
-                await supabase.from('wni_players').update({ is_ready: isReady }).eq('id', playerId);
+                // Optimistic UI Update agar tombol merespon instan
+                setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, is_ready: isReady } : p));
+                
+                const { error } = await supabase.from('wni_players').update({ is_ready: isReady }).eq('id', playerId);
+                if (error) {
+                    console.error("Gagal update status ready:", error);
+                    // Rollback jika gagal
+                    setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, is_ready: !isReady } : p));
+                }
             };
 
             const handleStartGame = async () => {
