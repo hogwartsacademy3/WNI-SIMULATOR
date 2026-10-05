@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MONOPOLI WNI - Yang penting punya tanah.</title>
     
     <!-- Tailwind CSS -->
@@ -19,164 +19,351 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- FontAwesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
         
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc; /* Slate 50 */
-            color: #0f172a; /* Slate 900 */
-            overscroll-behavior-y: none;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+            overscroll-behavior: none;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-        /* Board Grid Layout (11x11 Monopoly Standard) */
+        /* Board Container Responsive Geometry */
+        .board-wrapper {
+            width: min(98vw, calc(100vh - 210px), 780px);
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Strict 11x11 Grid Layout */
         .board-grid {
             display: grid;
             grid-template-columns: repeat(11, 1fr);
             grid-template-rows: repeat(11, 1fr);
-            aspect-ratio: 1 / 1;
             width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            background: #e2e8f0;
-            border: 2px solid #cbd5e1;
-            border-radius: 12px;
+            height: 100%;
+            background: #1e293b;
+            border: 3px solid #334155;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(59, 130, 246, 0.15);
+            position: relative;
         }
 
+        /* Individual Tile System */
         .tile {
-            border: 1px solid #cbd5e1;
-            background: white;
+            border: 1px solid #334155;
+            background: #ffffff;
+            color: #0f172a;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
             text-align: center;
-            font-size: 0.65rem;
             position: relative;
-            padding: 2px;
-            box-sizing: border-box;
-        }
-        
-        @media (min-width: 768px) {
-            .tile { font-size: 0.75rem; padding: 4px; }
+            padding: 1px;
+            overflow: hidden;
+            transition: background-color 0.2s ease, transform 0.2s ease;
         }
 
+        .tile-landed {
+            animation: tilePulse 0.8s ease-in-out infinite alternate;
+            z-index: 15;
+            box-shadow: inset 0 0 0 2px #ef4444;
+        }
+
+        @keyframes tilePulse {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.25); }
+        }
+
+        /* Tile Color Header */
         .tile .color-header {
             width: 100%;
-            height: 20%;
-            min-height: 12px;
-            border-bottom: 1px solid #cbd5e1;
+            height: 22%;
+            min-height: 8px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1px;
         }
 
-        /* Tile Orientations based on grid position */
+        /* Tile Orientations */
         .tile-bottom { flex-direction: column; }
         .tile-left { flex-direction: row-reverse; }
-        .tile-left .color-header { width: 20%; height: 100%; border-bottom: none; border-left: 1px solid #cbd5e1; }
+        .tile-left .color-header { width: 22%; height: 100%; border-bottom: none; border-left: 1px solid rgba(0,0,0,0.15); flex-direction: column; }
         .tile-top { flex-direction: column-reverse; }
-        .tile-top .color-header { border-bottom: none; border-top: 1px solid #cbd5e1; }
+        .tile-top .color-header { border-bottom: none; border-top: 1px solid rgba(0,0,0,0.15); }
         .tile-right { flex-direction: row; }
-        .tile-right .color-header { width: 20%; height: 100%; border-bottom: none; border-right: 1px solid #cbd5e1; }
+        .tile-right .color-header { width: 22%; height: 100%; border-bottom: none; border-right: 1px solid rgba(0,0,0,0.15); flex-direction: column; }
 
+        /* Clamped Dynamic Responsive Typography */
+        .tile-title {
+            font-size: clamp(6px, 1.25vw, 10px);
+            line-height: 1.05;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            hyphens: auto;
+            max-width: 100%;
+        }
+
+        .tile-price {
+            font-size: clamp(5px, 1.05vw, 9px);
+            font-weight: 700;
+            line-height: 1;
+            color: #475569;
+        }
+
+        /* Board Center */
         .center-board {
             grid-column: 2 / 11;
             grid-row: 2 / 11;
-            background-color: #f8fafc;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            padding: 20px;
+            padding: 8px;
             position: relative;
+            overflow: hidden;
         }
 
+        /* Player Tokens */
         .player-token {
-            width: 16px;
-            height: 16px;
+            width: clamp(10px, 2.2vw, 18px);
+            height: clamp(10px, 2.2vw, 18px);
             border-radius: 50%;
             border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.6);
             position: absolute;
-            transition: all 0.3s ease-in-out;
-            z-index: 10;
+            transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 20;
         }
 
-        /* Dice Animation */
-        @keyframes roll {
-            0% { transform: rotate(0deg) scale(1); }
-            50% { transform: rotate(180deg) scale(1.2); }
-            100% { transform: rotate(360deg) scale(1); }
+        .token-stepping {
+            transform: scale(1.35) translateY(-4px);
+            z-index: 30 !important;
         }
-        .dice-rolling { animation: roll 0.5s ease-out; }
+
+        /* Dice Rolling Visual */
+        @keyframes diceShake {
+            0% { transform: rotate(0deg) scale(1); }
+            20% { transform: rotate(-15deg) scale(1.15); }
+            40% { transform: rotate(15deg) scale(1.15); }
+            60% { transform: rotate(-10deg) scale(1.1); }
+            80% { transform: rotate(10deg) scale(1.05); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+        .dice-rolling { animation: diceShake 0.15s infinite linear; }
+
+        /* Card Entrance Animation */
+        @keyframes cardPop {
+            0% { opacity: 0; transform: scale(0.7) translateY(20px); }
+            70% { transform: scale(1.03) translateY(-5px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-card-pop { animation: cardPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        /* Floating Money Delta Indicator */
+        @keyframes floatUp {
+            0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+            20% { opacity: 1; transform: translateY(-5px) scale(1.1); }
+            80% { opacity: 1; transform: translateY(-25px) scale(1); }
+            100% { opacity: 0; transform: translateY(-40px) scale(0.9); }
+        }
+        .animate-float-money { animation: floatUp 1.6s ease-out forwards; }
 
         .glass-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(203, 213, 225, 0.5);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background: rgba(30, 41, 59, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between">
+    <div id="root" class="flex flex-col min-h-screen"></div>
 
     <script type="text/babel">
         const SUPABASE_URL = 'https://chbkfshmnfvidyrpmivs.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_bTDfoIzuPdfpo7nRkhu0-w_rhhEF4yk';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // --- AUDIO FX SYNTHESIZER (NO EXTERNAL ASSETS NEEDED) ---
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = localStorage.getItem('wni_muted') === 'true';
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) this.ctx = new AudioContext();
+                }
+            }
+
+            setMuted(mute) {
+                this.muted = mute;
+                localStorage.setItem('wni_muted', mute ? 'true' : 'false');
+            }
+
+            playDice() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150 + Math.random() * 200, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playStep() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+
+            playLand() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+                osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.08); // E5
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            }
+
+            playMoney() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const notes = [587.33, 880]; // D5, A5
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.08 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.08);
+                    osc.stop(this.ctx.currentTime + idx * 0.08 + 0.2);
+                });
+            }
+
+            playJail() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+        }
+
+        const audioFX = new SoundFX();
+
         // Utility: Format Rupiah
         const formatRp = (num) => {
-            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
         };
 
         const generateId = () => Math.random().toString(36).substring(2, 9);
         
         // --- GAME DATA ---
         const GROUPS = {
-            COKELAT: { color: '#8B4513', upgradePrice: 500000, rukoPrice: 750000 },
-            BIRUMUDA: { color: '#87CEEB', upgradePrice: 700000, rukoPrice: 1000000 },
-            PINK: { color: '#FF69B4', upgradePrice: 900000, rukoPrice: 1250000 },
-            ORANYE: { color: '#FFA500', upgradePrice: 1100000, rukoPrice: 1500000 },
-            MERAH: { color: '#FF0000', upgradePrice: 1300000, rukoPrice: 1750000 },
-            KUNING: { color: '#FFD700', upgradePrice: 1500000, rukoPrice: 2000000 },
-            HIJAU: { color: '#008000', upgradePrice: 1750000, rukoPrice: 2250000 },
-            BIRUTUA: { color: '#00008B', upgradePrice: 2000000, rukoPrice: 2500000 }
+            COKELAT: { color: '#8B4513', name: 'Cokelat', upgradePrice: 500000 },
+            BIRUMUDA: { color: '#38BDF8', name: 'Biru Muda', upgradePrice: 700000 },
+            PINK: { color: '#EC4899', name: 'Pink', upgradePrice: 900000 },
+            ORANYE: { color: '#F97316', name: 'Oranye', upgradePrice: 1100000 },
+            MERAH: { color: '#EF4444', name: 'Merah', upgradePrice: 1300000 },
+            KUNING: { color: '#EAB308', name: 'Kuning', upgradePrice: 1500000 },
+            HIJAU: { color: '#22C55E', name: 'Hijau', upgradePrice: 1750000 },
+            BIRUTUA: { color: '#1D4ED8', name: 'Biru Tua', upgradePrice: 2000000 }
         };
 
+        const BUILDING_NAMES = ['Tanah Kosong', 'Rumah Subsidi', 'Rumah KPR', 'Ruko', 'Gedung'];
+
         const BOARD_TILES = [
-            { id: 0, name: 'GAJIAN', type: 'GO', desc: '+Rp2.000.000' },
+            { id: 0, name: 'GAJIAN', type: 'GO', desc: '+Rp2.000.000', icon: 'fa-sack-dollar' },
             { id: 1, name: 'Aceh', type: 'PROPERTY', group: 'COKELAT', price: 1000000, rent: [100000, 200000, 500000, 1000000, 1500000, 2000000] },
-            { id: 2, name: 'NASIB', type: 'CHANCE', icon: 'fa-question-circle' },
+            { id: 2, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
             { id: 3, name: 'Sumatra Utara', type: 'PROPERTY', group: 'COKELAT', price: 1200000, rent: [100000, 200000, 500000, 1000000, 1500000, 2000000] },
             { id: 4, name: 'PAJAK PENGHASILAN', type: 'TAX', amount: 500000, icon: 'fa-file-invoice-dollar' },
             { id: 5, name: 'KERETA API', type: 'TRANSPORT', price: 2000000, icon: 'fa-train' },
             { id: 6, name: 'Jawa Barat', type: 'PROPERTY', group: 'BIRUMUDA', price: 1500000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
-            { id: 7, name: 'NASIB', type: 'CHANCE', icon: 'fa-question-circle' },
+            { id: 7, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
             { id: 8, name: 'Banten', type: 'PROPERTY', group: 'BIRUMUDA', price: 1700000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
             { id: 9, name: 'DKI Jakarta', type: 'PROPERTY', group: 'BIRUMUDA', price: 2000000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
-            { id: 10, name: 'PENJARA / BERKUNJUNG', type: 'JAIL_VISIT', icon: 'fa-border-all' },
+            { id: 10, name: 'PENJARA / BERKUNJUNG', type: 'JAIL_VISIT', icon: 'fa-lock' },
             { id: 11, name: 'Jawa Tengah', type: 'PROPERTY', group: 'PINK', price: 2200000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
-            { id: 12, name: 'PLN', type: 'UTILITY', price: 1500000, icon: 'fa-lightbulb' },
+            { id: 12, name: 'PLN', type: 'UTILITY', price: 1500000, icon: 'fa-bolt' },
             { id: 13, name: 'Yogyakarta', type: 'PROPERTY', group: 'PINK', price: 2400000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
             { id: 14, name: 'Jawa Timur', type: 'PROPERTY', group: 'PINK', price: 2600000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
             { id: 15, name: 'STASIUN', type: 'TRANSPORT', price: 2000000, icon: 'fa-subway' },
             { id: 16, name: 'Bali', type: 'PROPERTY', group: 'ORANYE', price: 2800000, rent: [250000, 500000, 1250000, 2000000, 3000000, 3500000] },
-            { id: 17, name: 'REALITA', type: 'COMMUNITY', icon: 'fa-exclamation-triangle' },
+            { id: 17, name: 'REALITA', type: 'COMMUNITY', icon: 'fa-triangle-exclamation' },
             { id: 18, name: 'NTB', type: 'PROPERTY', group: 'ORANYE', price: 3000000, rent: [250000, 500000, 1250000, 2000000, 3000000, 3500000] },
             { id: 19, name: 'NTT', type: 'PROPERTY', group: 'ORANYE', price: 3200000, rent: [250000, 500000, 1250000, 2000000, 3000000, 3500000] },
-            { id: 20, name: 'PARKIR GRATIS', type: 'FREE_PARKING', icon: 'fa-car' },
+            { id: 20, name: 'PARKIR GRATIS', type: 'FREE_PARKING', icon: 'fa-square-parking' },
             { id: 21, name: 'Kalimantan Barat', type: 'PROPERTY', group: 'MERAH', price: 3400000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
-            { id: 22, name: 'NASIB', type: 'CHANCE', icon: 'fa-question-circle' },
+            { id: 22, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
             { id: 23, name: 'Kalimantan Selatan', type: 'PROPERTY', group: 'MERAH', price: 3600000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
             { id: 24, name: 'Kalimantan Timur', type: 'PROPERTY', group: 'MERAH', price: 3800000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
             { id: 25, name: 'PELABUHAN', type: 'TRANSPORT', price: 2000000, icon: 'fa-ship' },
@@ -187,10 +374,10 @@
             { id: 30, name: 'MASUK PENJARA', type: 'GO_TO_JAIL', icon: 'fa-gavel' },
             { id: 31, name: 'Maluku', type: 'PROPERTY', group: 'HIJAU', price: 4600000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
             { id: 32, name: 'Maluku Utara', type: 'PROPERTY', group: 'HIJAU', price: 4800000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
-            { id: 33, name: 'REALITA', type: 'COMMUNITY', icon: 'fa-exclamation-triangle' },
+            { id: 33, name: 'REALITA', type: 'COMMUNITY', icon: 'fa-triangle-exclamation' },
             { id: 34, name: 'Papua Barat', type: 'PROPERTY', group: 'HIJAU', price: 5000000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
             { id: 35, name: 'BANDARA', type: 'TRANSPORT', price: 2000000, icon: 'fa-plane' },
-            { id: 36, name: 'NASIB', type: 'CHANCE', icon: 'fa-question-circle' },
+            { id: 36, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
             { id: 37, name: 'Papua', type: 'PROPERTY', group: 'BIRUTUA', price: 5500000, rent: [500000, 1000000, 2500000, 4000000, 5000000, 6000000] },
             { id: 38, name: 'PAJAK KENDARAAN', type: 'TAX', amount: 300000, icon: 'fa-motorcycle' },
             { id: 39, name: 'Raja Ampat', type: 'PROPERTY', group: 'BIRUTUA', price: 6000000, rent: [500000, 1000000, 2500000, 4000000, 5000000, 6000000] }
@@ -236,68 +423,6 @@
 
         const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
 
-        const SQL_SCHEMA = `
--- COPY AND PASTE THIS INTO YOUR SUPABASE SQL EDITOR
-CREATE TABLE wni_rooms (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    code TEXT UNIQUE NOT NULL,
-    host_id TEXT NOT NULL,
-    status TEXT DEFAULT 'waiting',
-    state JSONB DEFAULT '{}',
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE TABLE wni_players (
-    id TEXT PRIMARY KEY,
-    room_id UUID REFERENCES wni_rooms(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    color TEXT,
-    is_ready BOOLEAN DEFAULT false,
-    last_seen TIMESTAMPTZ DEFAULT now(),
-    UNIQUE(room_id, name)
-);
-
-CREATE TABLE wni_actions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    room_id UUID REFERENCES wni_rooms(id) ON DELETE CASCADE,
-    player_id TEXT NOT NULL,
-    type TEXT NOT NULL,
-    payload JSONB DEFAULT '{}',
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE TABLE wni_messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    room_id UUID REFERENCES wni_rooms(id) ON DELETE CASCADE,
-    player_id TEXT,
-    player_name TEXT,
-    text TEXT NOT NULL,
-    type TEXT DEFAULT 'chat',
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Basic RLS for the game (Allow all for anonymous gameplay to work without complex Auth setup)
-ALTER TABLE wni_rooms ENABLE ROW LEVEL SECURITY;
-ALTER TABLE wni_players ENABLE ROW LEVEL SECURITY;
-ALTER TABLE wni_actions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE wni_messages ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Enable read/write for all users" ON wni_rooms FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Enable read/write for all users" ON wni_players FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Enable read/write for all users" ON wni_actions FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Enable read/write for all users" ON wni_messages FOR ALL USING (true) WITH CHECK (true);
-
--- ENABLE REALTIME (WAJIB UNTUK MULTIPLAYER)
-ALTER PUBLICATION supabase_realtime ADD TABLE wni_rooms;
-ALTER PUBLICATION supabase_realtime ADD TABLE wni_players;
-ALTER PUBLICATION supabase_realtime ADD TABLE wni_actions;
-ALTER PUBLICATION supabase_realtime ADD TABLE wni_messages;
-
--- Function to cleanup old rooms automatically
-CREATE EXTENSION IF NOT EXISTS pg_cron;
--- SELECT cron.schedule('0 * * * *', $$DELETE FROM wni_rooms WHERE created_at < now() - interval '24 hours'$$);
-`;
-
         const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
         const useLocalStorage = (key, initialValue) => {
@@ -321,39 +446,50 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
             return [storedValue, setValue];
         };
 
-        const SetupScreen = ({ onComplete }) => {
+        // --- Animated Money Component ---
+        const AnimatedMoney = ({ amount }) => {
+            const [display, setDisplay] = useState(amount);
+            const prevAmountRef = useRef(amount);
+            const [delta, setDelta] = useState(null);
+
+            useEffect(() => {
+                const diff = amount - prevAmountRef.current;
+                if (diff !== 0) {
+                    setDelta(diff);
+                    if (diff > 0) audioFX.playMoney();
+                    const timer = setTimeout(() => setDelta(null), 1800);
+
+                    // Interpolate
+                    const start = display;
+                    const duration = 400;
+                    const startTime = performance.now();
+
+                    const step = (now) => {
+                        const elapsed = now - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        setDisplay(Math.round(start + (amount - start) * progress));
+                        if (progress < 1) requestAnimationFrame(step);
+                    };
+                    requestAnimationFrame(step);
+
+                    prevAmountRef.current = amount;
+                    return () => clearTimeout(timer);
+                }
+            }, [amount]);
+
             return (
-                <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-xl p-8 max-w-2xl w-full">
-                        <h1 className="text-2xl font-bold text-red-600 mb-4"><i className="fas fa-exclamation-triangle mr-2"></i> Database Belum Siap</h1>
-                        <p className="text-gray-600 mb-4">
-                            Sistem mendeteksi tabel database yang dibutuhkan belum ada di Supabase kamu. 
-                            Silakan copy script SQL di bawah ini dan jalankan di menu <strong>SQL Editor</strong> di dashboard Supabase kamu.
-                        </p>
-                        <div className="relative">
-                            <textarea 
-                                readOnly 
-                                value={SQL_SCHEMA} 
-                                className="w-full h-64 p-4 bg-slate-900 text-green-400 font-mono text-sm rounded-lg mb-4"
-                            />
-                            <button 
-                                onClick={() => navigator.clipboard.writeText(SQL_SCHEMA)}
-                                className="absolute top-2 right-2 bg-slate-700 text-white px-3 py-1 rounded text-sm hover:bg-slate-600"
-                            >
-                                Copy
-                            </button>
-                        </div>
-                        <button 
-                            onClick={onComplete}
-                            className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition"
-                        >
-                            Saya Sudah Menjalankan SQL
-                        </button>
-                    </div>
+                <div className="relative inline-flex items-center font-black">
+                    <span>{formatRp(display)}</span>
+                    {delta !== null && (
+                        <span className={`absolute -top-6 right-0 font-extrabold text-sm animate-float-money ${delta > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {delta > 0 ? `+${formatRp(delta)}` : formatRp(delta)}
+                        </span>
+                    )}
                 </div>
             );
         };
 
+        // Home View
         const Home = ({ onJoin, onCreate }) => {
             const [name, setName] = useState('');
             const [code, setCode] = useState('');
@@ -371,50 +507,52 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
             };
 
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[url('https://www.transparenttextures.com/patterns/cartographer.png')]">
-                    <div className="max-w-md w-full bg-white/95 backdrop-blur rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
-                        <div className="bg-slate-900 p-6 text-center">
-                            <h1 className="text-4xl font-extrabold text-white tracking-wider">MONOPOLI<span className="text-red-500">WNI</span></h1>
-                            <p className="text-slate-300 mt-2 italic text-sm">"Yang penting punya tanah."</p>
+                <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-950 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]">
+                    <div className="max-w-md w-full bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-slate-800 p-6 md:p-8">
+                        <div className="text-center mb-8">
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-400 text-white shadow-lg shadow-red-500/30 mb-4">
+                                <i className="fas fa-building text-3xl"></i>
+                            </div>
+                            <h1 className="text-4xl font-black text-white tracking-tight">MONOPOLI<span className="text-red-500">WNI</span></h1>
+                            <p className="text-slate-400 mt-2 text-sm italic font-medium">"Yang penting punya tanah."</p>
                         </div>
-                        <div className="p-8">
-                            {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm text-center">{error}</div>}
-                            
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Nama Pemain</label>
-                                    <input 
-                                        type="text" 
-                                        maxLength="12"
-                                        value={name} 
-                                        onChange={(e) => setName(e.target.value)}
-                                        className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-slate-900 transition"
-                                        placeholder="Misal: Budi"
-                                    />
-                                </div>
 
-                                <button onClick={handleCreate} className="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition flex justify-center items-center gap-2">
-                                    <i className="fas fa-plus"></i> BUAT ROOM BARU
+                        {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl mb-4 text-xs font-bold text-center">{error}</div>}
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nama Pemain</label>
+                                <input 
+                                    type="text" 
+                                    maxLength="12"
+                                    value={name} 
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full bg-slate-800/80 border border-slate-700/80 text-white rounded-xl px-4 py-3.5 focus:outline-none focus:border-red-500 font-bold transition placeholder-slate-500"
+                                    placeholder="Masukkan nama kamu..."
+                                />
+                            </div>
+
+                            <button onClick={handleCreate} className="w-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-black py-4 rounded-xl shadow-lg shadow-red-600/25 hover:from-red-500 hover:to-rose-500 transition active:scale-[0.98] flex justify-center items-center gap-2">
+                                <i className="fas fa-plus-circle text-lg"></i> BUAT ROOM BARU
+                            </button>
+
+                            <div className="flex items-center my-4">
+                                <div className="flex-grow border-t border-slate-800"></div>
+                                <span className="px-4 text-slate-500 text-xs font-extrabold uppercase tracking-widest">ATAU</span>
+                                <div className="flex-grow border-t border-slate-800"></div>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    value={code} 
+                                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                                    className="w-full bg-slate-800/80 border border-slate-700/80 text-white rounded-xl px-4 py-3.5 focus:outline-none focus:border-red-500 uppercase font-black tracking-widest transition placeholder-slate-500"
+                                    placeholder="KODE ROOM"
+                                />
+                                <button onClick={handleJoin} className="bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 font-bold px-6 rounded-xl transition active:scale-[0.98] whitespace-nowrap">
+                                    GABUNG
                                 </button>
-
-                                <div className="flex items-center py-2">
-                                    <div className="flex-grow border-t border-slate-200"></div>
-                                    <span className="px-4 text-slate-400 text-sm font-medium">ATAU</span>
-                                    <div className="flex-grow border-t border-slate-200"></div>
-                                </div>
-
-                                <div className="flex gap-2">
-                                    <input 
-                                        type="text" 
-                                        value={code} 
-                                        onChange={(e) => setCode(e.target.value.toUpperCase())}
-                                        className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-slate-900 uppercase font-bold tracking-widest transition"
-                                        placeholder="KODE ROOM"
-                                    />
-                                    <button onClick={handleJoin} className="bg-slate-200 text-slate-900 font-bold px-6 rounded-lg hover:bg-slate-300 transition whitespace-nowrap">
-                                        GABUNG
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -422,59 +560,61 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
             );
         };
 
+        // Lobby View
         const Lobby = ({ room, players, me, onReady, onStart, onLeave }) => {
             const isHost = room.host_id === me.id;
             const allReady = players.every(p => p.is_ready);
 
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-4">
-                    <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
-                        <div className="bg-slate-900 p-6 flex justify-between items-center text-white">
+                <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-950">
+                    <div className="max-w-xl w-full bg-slate-900 rounded-3xl shadow-2xl border border-slate-800 overflow-hidden">
+                        <div className="bg-slate-800/80 p-6 flex justify-between items-center border-b border-slate-700/50">
                             <div>
-                                <p className="text-sm text-slate-400 uppercase tracking-widest mb-1">Kode Room</p>
-                                <h2 className="text-3xl font-bold tracking-widest">{room.code}</h2>
+                                <p className="text-xs text-slate-400 uppercase tracking-widest font-extrabold">Kode Room</p>
+                                <h2 className="text-3xl font-black tracking-widest text-white">{room.code}</h2>
                             </div>
-                            <button onClick={onLeave} className="text-slate-400 hover:text-white"><i className="fas fa-sign-out-alt fa-lg"></i></button>
+                            <button onClick={onLeave} className="text-slate-400 hover:text-rose-400 transition p-2"><i className="fas fa-sign-out-alt text-xl"></i></button>
                         </div>
                         
                         <div className="p-6">
-                            <h3 className="font-semibold text-slate-700 mb-4 uppercase tracking-wider text-sm flex items-center justify-between">
-                                <span>Pemain ({players.length}/8)</span>
-                                {players.length < 2 && <span className="text-red-500 text-xs normal-case">Butuh min. 2 pemain</span>}
-                            </h3>
-                            <div className="grid gap-3 mb-8">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="font-extrabold text-slate-300 text-sm tracking-wider uppercase">Pemain ({players.length}/8)</span>
+                                {players.length < 2 && <span className="text-rose-400 text-xs font-bold bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">Butuh min. 2 pemain</span>}
+                            </div>
+                            
+                            <div className="grid gap-3 mb-6 max-h-72 overflow-y-auto pr-1">
                                 {players.map(p => (
-                                    <div key={p.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                    <div key={p.id} className="flex items-center justify-between p-3.5 bg-slate-800/50 rounded-2xl border border-slate-700/40">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full shadow-sm" style={{ backgroundColor: p.color }}></div>
-                                            <span className="font-bold text-slate-800">
-                                                {p.name} {p.id === room.host_id && <i className="fas fa-crown text-yellow-500 ml-1" title="Host"></i>}
-                                                {p.id === me.id && <span className="text-xs text-slate-400 ml-2">(Kamu)</span>}
+                                            <div className="w-8 h-8 rounded-full shadow-md border-2 border-white/20" style={{ backgroundColor: p.color }}></div>
+                                            <span className="font-bold text-slate-200">
+                                                {p.name} {p.id === room.host_id && <i className="fas fa-crown text-amber-400 ml-1.5" title="Host"></i>}
+                                                {p.id === me.id && <span className="text-xs text-slate-400 font-semibold ml-2">(Kamu)</span>}
                                             </span>
                                         </div>
                                         <div>
                                             {p.is_ready 
-                                                ? <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-bold">READY</span>
-                                                : <span className="bg-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full font-bold">WAITING</span>
+                                                ? <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1.5 rounded-full font-black tracking-wider">READY</span>
+                                                : <span className="bg-slate-700/50 text-slate-400 border border-slate-600/30 text-xs px-3 py-1.5 rounded-full font-black tracking-wider">WAITING</span>
                                             }
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="flex gap-4">
+                            <div className="flex gap-3">
                                 <button 
                                     onClick={() => onReady(!me.is_ready)}
-                                    className={`flex-1 py-3 rounded-lg font-bold transition ${me.is_ready ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-green-500 text-white hover:bg-green-600'}`}
+                                    className={`flex-1 py-4 rounded-xl font-black tracking-wider transition active:scale-[0.98] ${me.is_ready ? 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700' : 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500'}`}
                                 >
-                                    {me.is_ready ? 'BATAL READY' : 'READY'}
+                                    {me.is_ready ? 'BATAL READY' : 'SAYA READY'}
                                 </button>
                                 
                                 {isHost && (
                                     <button 
                                         onClick={onStart}
                                         disabled={!allReady || players.length < 2}
-                                        className={`flex-1 py-3 rounded-lg font-bold transition ${allReady && players.length >= 2 ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                                        className={`flex-1 py-4 rounded-xl font-black tracking-wider transition active:scale-[0.98] ${allReady && players.length >= 2 ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-600/25 hover:from-red-500 hover:to-rose-500' : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-800'}`}
                                     >
                                         MULAI GAME
                                     </button>
@@ -486,9 +626,9 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
             );
         };
 
-        // This function handles the complex logic and acts as the secure server, run only by the Host.
+        // Process Game Action - Authoritative Server Logic
         const processAction = (state, action, logMsg) => {
-            const newState = JSON.parse(JSON.stringify(state)); // Deep copy
+            const newState = JSON.parse(JSON.stringify(state));
             const player = newState.players[action.player_id];
             
             if (!player) return newState;
@@ -498,15 +638,16 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                 let nextIdx = (newState.turn.currentIndex + 1) % newState.turnOrder.length;
                 
                 // Skip bankrupt players
-                while(newState.players[newState.turnOrder[nextIdx]].bankrupt) {
-                    nextIdx = (newState.turn.currentIndex + 1) % newState.turnOrder.length;
+                let iterations = 0;
+                while(newState.players[newState.turnOrder[nextIdx]].bankrupt && iterations < newState.turnOrder.length) {
+                    nextIdx = (nextIdx + 1) % newState.turnOrder.length;
+                    iterations++;
                 }
                 
                 newState.turn.currentIndex = nextIdx;
                 newState.turn.currentPlayerId = newState.turnOrder[nextIdx];
                 newState.turn.phase = 'WAITING_FOR_ROLL';
                 
-                // Jail check start of turn
                 const nextPlayer = newState.players[newState.turn.currentPlayerId];
                 if (nextPlayer.jailStatus) {
                     newState.turn.phase = 'JAIL_DECISION';
@@ -517,7 +658,6 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                 if (newState.players[playerId].money < amount) {
                     newState.turn.phase = 'BANKRUPTCY_RESOLUTION';
                     newState.turn.debt = amount;
-                    newState.turn.creditor = 'BANK'; // Simplified creditor to Bank for this gen
                     return true;
                 }
                 return false;
@@ -539,7 +679,6 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                             player.jailStatus = false;
                             player.jailAttempts = 0;
                             logMsg(`${player.name} berhasil keluar penjara karena double!`);
-                            // Move based on roll
                         } else {
                             player.jailAttempts++;
                             if (player.jailAttempts >= 3) {
@@ -565,7 +704,7 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                             break;
                         }
                     } else {
-                        newState.turn.doublesCount = 0; // Reset if not double
+                        newState.turn.doublesCount = 0;
                     }
 
                     // Move
@@ -579,17 +718,6 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                     }
 
                     const tile = BOARD_TILES[player.position];
-                    newState.turn.phase = 'ANIMATING'; // Client handles animation, then resolves
-                    
-                    // Direct Landing Resolution logic for host
-                    setTimeout(() => {
-                        // This timeout simulates the client sending 'LANDING_RESOLVED' after animation
-                        // For a strict single-file host model without complex async delays, we process immediately
-                        // and let the client just snap or animate based on state change.
-                    }, 0);
-                    
-                    // To keep it synchronous in this reducer pattern, we resolve landing immediately.
-                    // The UI will just show the final state, which is fine for this constraint.
                     
                     if (tile.type === 'PROPERTY' || tile.type === 'TRANSPORT' || tile.type === 'UTILITY') {
                         const propState = newState.properties[tile.id];
@@ -601,7 +729,6 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                             const owner = propState.ownerId;
                             if (tile.type === 'PROPERTY') {
                                 rent = tile.rent[propState.level];
-                                // Check full set bonus (level 0 but full set = 2x rent)
                                 if (propState.level === 0) {
                                     const groupTiles = BOARD_TILES.filter(t => t.group === tile.group).map(t => t.id);
                                     const ownsAll = groupTiles.every(tid => newState.properties[tid].ownerId === owner);
@@ -613,24 +740,23 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                             } else if (tile.type === 'UTILITY') {
                                 const utilCount = BOARD_TILES.filter(t => t.type === 'UTILITY').filter(t => newState.properties[t.id].ownerId === owner).length;
                                 const multiplier = utilCount === 2 ? 10 : 4;
-                                rent = (d1 + d2) * multiplier * 10000; // Adjusted utility formula slightly for WNI scale (d1+d2 * 10 * 10000)
+                                rent = (d1 + d2) * multiplier * 10000;
                             }
                             
-                            logMsg(`${player.name} bayar sewa Rp${rent.toLocaleString()} ke ${newState.players[owner].name}`);
+                            logMsg(`${player.name} bayar sewa Rp${rent.toLocaleString('id-ID')} ke ${newState.players[owner].name}`);
                             player.money -= rent;
                             newState.players[owner].money += rent;
                             
-                            if (checkBankrupt(player.id, 0)) break; // If below 0 after rent
+                            if (checkBankrupt(player.id, 0)) break;
                             
                             if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
                             else nextTurn();
                         } else {
-                            // Own property or mortgaged
                             if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
                             else nextTurn();
                         }
                     } else if (tile.type === 'TAX') {
-                        logMsg(`${player.name} bayar ${tile.name} Rp${tile.amount.toLocaleString()}`);
+                        logMsg(`${player.name} bayar ${tile.name} Rp${tile.amount.toLocaleString('id-ID')}`);
                         player.money -= tile.amount;
                         if (checkBankrupt(player.id, 0)) break;
                         if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
@@ -642,10 +768,10 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                         newState.turn.doublesCount = 0;
                         nextTurn();
                     } else if (tile.type === 'CHANCE' || tile.type === 'COMMUNITY') {
-                        // Simplified card draw logic
                         const cardArr = tile.type === 'CHANCE' ? NASIB_CARDS : REALITA_CARDS;
                         const card = cardArr[Math.floor(Math.random() * cardArr.length)];
-                        logMsg(`${player.name} dapat kartu: ${card.text}`);
+                        newState.turn.activeCard = { ...card, type: tile.type };
+                        logMsg(`${player.name} dapat kartu ${tile.type === 'CHANCE' ? 'NASIB' : 'REALITA'}: ${card.text}`);
                         
                         if (card.action === 'money') {
                             player.money += card.amount;
@@ -657,18 +783,13 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                             newState.turn.doublesCount = 0;
                         } else if (card.action === 'keep_jail_card') {
                             player.cards.push('ORANG_DALAM');
-                        } else if (card.action === 'skip_turn') {
-                            // Next turn skips them? Too complex for single state, just end turn now
-                            newState.turn.doublesCount = 0;
                         }
 
                         if (checkBankrupt(player.id, 0)) break;
 
                         if (newState.turn.doublesCount > 0 && !player.jailStatus) newState.turn.phase = 'WAITING_FOR_ROLL';
-                        else if (!player.jailStatus) nextTurn();
                         else nextTurn();
                     } else {
-                        // GO, Free Parking, Jail Visiting
                         if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
                         else nextTurn();
                     }
@@ -677,19 +798,21 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 
                 case 'BUY_PROPERTY': {
                     const tile = BOARD_TILES[player.position];
-                    if (player.money >= tile.price) {
-                        player.money -= tile.price;
-                        newState.properties[tile.id].ownerId = player.id;
-                        logMsg(`${player.name} membeli ${tile.name}`);
+                    // STRICT BALANCE CHECK ON SERVER
+                    if (player.money < tile.price) {
+                        logMsg(`[REJECTED] Saldo ${player.name} tidak cukup untuk beli ${tile.name}`);
+                        break;
                     }
+                    player.money -= tile.price;
+                    newState.properties[tile.id].ownerId = player.id;
+                    logMsg(`${player.name} membeli ${tile.name} seharga Rp${tile.price.toLocaleString('id-ID')}`);
+                    
                     if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
                     else nextTurn();
                     break;
                 }
 
                 case 'SKIP_BUY': {
-                    // To keep it simple in this V1, skip auction and just pass turn.
-                    // (Full auction state machine requires many steps).
                     if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
                     else nextTurn();
                     break;
@@ -699,10 +822,12 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                     const { tileId } = action.payload;
                     const tile = BOARD_TILES[tileId];
                     const group = GROUPS[tile.group];
-                    if (player.money >= group.upgradePrice) {
+                    const prop = newState.properties[tileId];
+
+                    if (prop.ownerId === player.id && prop.level < 4 && player.money >= group.upgradePrice) {
                         player.money -= group.upgradePrice;
-                        newState.properties[tileId].level++;
-                        logMsg(`${player.name} upgrade ${tile.name} ke level ${newState.properties[tileId].level}`);
+                        prop.level++;
+                        logMsg(`${player.name} upgrade ${tile.name} ke level ${BUILDING_NAMES[prop.level]}`);
                     }
                     break;
                 }
@@ -721,9 +846,14 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                     if (player.cards.includes('ORANG_DALAM')) {
                         player.cards = player.cards.filter(c => c !== 'ORANG_DALAM');
                         player.jailStatus = false;
-                        logMsg(`${player.name} pakai jalur ORANG DALAM keluar penjara!`);
+                        logMsg(`${player.name} menggunakan kartu ORANG DALAM!`);
                         newState.turn.phase = 'WAITING_FOR_ROLL';
                     }
+                    break;
+                }
+
+                case 'CLOSE_CARD_POPUP': {
+                    delete newState.turn.activeCard;
                     break;
                 }
                 
@@ -731,14 +861,12 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                     player.bankrupt = true;
                     logMsg(`🚨 ${player.name} BANGKRUT!`);
                     
-                    // Return properties to bank (simplified)
                     Object.keys(newState.properties).forEach(id => {
                         if (newState.properties[id].ownerId === player.id) {
                             newState.properties[id] = { ownerId: null, level: 0, mortgaged: false };
                         }
                     });
 
-                    // Check win condition
                     const activePlayers = newState.turnOrder.filter(id => !newState.players[id].bankrupt);
                     if (activePlayers.length === 1) {
                         newState.status = 'game_over';
@@ -754,189 +882,474 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
             return newState;
         };
 
+        // Board Component
         const GameBoard = ({ state, me, sendAction }) => {
             const myTurn = state.turn.currentPlayerId === me.id;
             const myPlayer = state.players[me.id];
+            
+            // Local Animation States
+            const [rolling, setRolling] = useState(false);
+            const [displayDice, setDisplayDice] = useState([1, 1]);
+            const [visualPositions, setVisualPositions] = useState({});
+            const [steppingPlayerId, setSteppingPlayerId] = useState(null);
+            const [passGoToast, setPassGoToast] = useState(false);
+            const [activeTab, setActiveTab] = useState('board'); // 'board', 'players', 'logs'
+            const [muted, setMuted] = useState(audioFX.muted);
 
-            // Render Tiles in order
+            // Sync visual positions with state
+            useEffect(() => {
+                if (!state?.players) return;
+                const newVisuals = { ...visualPositions };
+                let updated = false;
+
+                Object.keys(state.players).forEach(pid => {
+                    const targetPos = state.players[pid].position;
+                    const currentVisual = newVisuals[pid];
+
+                    if (currentVisual === undefined) {
+                        newVisuals[pid] = targetPos;
+                        updated = true;
+                    } else if (currentVisual !== targetPos && !steppingPlayerId) {
+                        // Start step animation
+                        animateTokenStep(pid, currentVisual, targetPos);
+                    }
+                });
+
+                if (updated) setVisualPositions(newVisuals);
+            }, [state?.players]);
+
+            // Step-by-step token movement
+            const animateTokenStep = (pid, from, to) => {
+                setSteppingPlayerId(pid);
+                let current = from;
+
+                const interval = setInterval(() => {
+                    current = (current + 1) % 40;
+                    audioFX.playStep();
+                    
+                    if (current === 0 && from !== 0) {
+                        setPassGoToast(true);
+                        setTimeout(() => setPassGoToast(false), 2000);
+                    }
+
+                    setVisualPositions(prev => ({ ...prev, [pid]: current }));
+
+                    if (current === to) {
+                        clearInterval(interval);
+                        setSteppingPlayerId(null);
+                        audioFX.playLand();
+                    }
+                }, 200);
+            };
+
+            // Trigger Dice Roll visual animation
+            const handleRollClick = () => {
+                if (!myTurn || rolling || state.turn.phase !== 'WAITING_FOR_ROLL' && state.turn.phase !== 'JAIL_DECISION') return;
+                
+                setRolling(true);
+                audioFX.playDice();
+
+                let rolls = 0;
+                const interval = setInterval(() => {
+                    setDisplayDice([
+                        Math.floor(Math.random() * 6) + 1,
+                        Math.floor(Math.random() * 6) + 1
+                    ]);
+                    audioFX.playDice();
+                    rolls++;
+
+                    if (rolls > 10) {
+                        clearInterval(interval);
+                        setRolling(false);
+                        sendAction('ROLL');
+                    }
+                }, 90);
+            };
+
+            const toggleMute = () => {
+                const nextMute = !muted;
+                setMuted(nextMute);
+                audioFX.setMuted(nextMute);
+            };
+
+            // Render Tile Function
             const renderTile = (idx, classNames) => {
                 const tile = BOARD_TILES[idx];
                 const propState = state.properties[idx];
                 const owner = propState?.ownerId ? state.players[propState.ownerId] : null;
+                
+                // Players visual positions
+                const playersHere = state.turnOrder.filter(pid => {
+                    const pos = visualPositions[pid] !== undefined ? visualPositions[pid] : state.players[pid].position;
+                    return pos === idx && !state.players[pid].bankrupt;
+                });
 
-                // Players on this tile
-                const playersHere = state.turnOrder.filter(pid => state.players[pid].position === idx && !state.players[pid].bankrupt);
+                const isLanded = playersHere.some(pid => pid === state.turn.currentPlayerId);
 
                 return (
-                    <div key={idx} className={`tile ${classNames} relative group cursor-pointer`} onClick={() => console.log(tile)}>
+                    <div 
+                        key={idx} 
+                        className={`tile ${classNames} ${isLanded ? 'tile-landed' : ''}`}
+                    >
                         {tile.group && (
-                            <div className="color-header flex items-center justify-center" style={{ backgroundColor: GROUPS[tile.group].color }}>
-                                {propState?.level > 0 && <span className="text-white font-bold text-[8px]">{propState.level === 4 ? '🏢' : '🏠'.repeat(propState.level)}</span>}
+                            <div className="color-header" style={{ backgroundColor: GROUPS[tile.group].color }}>
+                                {propState?.level > 0 && (
+                                    <span className="text-white text-[8px] font-black drop-shadow">
+                                        {propState.level === 4 ? '🏢' : '🏠'.repeat(propState.level)}
+                                    </span>
+                                )}
                             </div>
                         )}
-                        <div className="flex-1 flex flex-col items-center justify-center p-1">
-                            <span className="font-bold text-center leading-tight mb-1">{tile.name}</span>
-                            {tile.icon && <i className={`fas ${tile.icon} text-slate-400 text-lg my-1`}></i>}
-                            {tile.price && <span className="text-slate-500 font-semibold">{formatRp(tile.price).replace(',00', '')}</span>}
-                            {owner && <div className="absolute bottom-0 w-full h-1" style={{backgroundColor: owner.color}}></div>}
-                        </div>
                         
-                        {/* Player Tokens Container */}
-                        <div className="absolute top-0 left-0 w-full h-full flex flex-wrap items-center justify-center pointer-events-none p-1 gap-1">
-                            {playersHere.map(pid => (
-                                <div key={pid} className="player-token" style={{ backgroundColor: state.players[pid].color }}></div>
+                        <div className="flex-1 flex flex-col items-center justify-between w-full p-0.5 overflow-hidden">
+                            <span className="tile-title">{tile.name}</span>
+                            
+                            {tile.icon && <i className={`fas ${tile.icon} text-slate-400 text-[10px] md:text-sm my-0.5`}></i>}
+                            
+                            {tile.price && (
+                                <span className="tile-price">
+                                    {formatRp(tile.price).replace(',00', '').replace('Rp', '')}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Owner Indicator Strip */}
+                        {owner && (
+                            <div 
+                                className="w-full h-1 md:h-1.5 transition-colors" 
+                                style={{ backgroundColor: owner.color }} 
+                                title={`Milik ${owner.name}`}
+                            ></div>
+                        )}
+                        
+                        {/* Player Tokens Placement Grid */}
+                        <div className="absolute inset-0 flex flex-wrap items-center justify-center p-0.5 pointer-events-none gap-0.5 z-20">
+                            {playersHere.map((pid, pIdx) => (
+                                <div 
+                                    key={pid} 
+                                    className={`player-token ${steppingPlayerId === pid ? 'token-stepping' : ''}`} 
+                                    style={{ 
+                                        backgroundColor: state.players[pid].color,
+                                        transform: `translate(${(pIdx % 3) * 2}px, ${Math.floor(pIdx / 3) * 2}px)`
+                                    }}
+                                    title={state.players[pid].name}
+                                ></div>
                             ))}
                         </div>
                     </div>
                 );
             };
 
+            const activeTile = BOARD_TILES[myPlayer.position];
+            const canAffordProperty = activeTile?.price ? myPlayer.money >= activeTile.price : false;
+
             return (
-                <div className="flex flex-col lg:flex-row h-screen bg-slate-100 p-2 gap-4">
-                    {/* Left: Board */}
-                    <div className="flex-1 flex items-center justify-center overflow-auto p-4">
-                        <div className="board-grid">
-                            {/* Top Row (20-30) */}
-                            {renderTile(20, 'col-span-1 row-span-1 rounded-tl-xl')}
-                            {[21, 22, 23, 24, 25, 26, 27, 28, 29].map((i, idx) => renderTile(i, `col-start-${idx+2} row-start-1 tile-top`))}
-                            {renderTile(30, 'col-start-11 row-start-1 rounded-tr-xl')}
+                <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100">
+                    {/* Header Controls */}
+                    <div className="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between sticky top-0 z-40">
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-lg md:text-xl font-black tracking-tight text-white">MONOPOLI<span className="text-red-500">WNI</span></h1>
+                            <span className="bg-slate-800 text-slate-400 text-xs px-2.5 py-1 rounded-full border border-slate-700 font-mono font-bold">{state.code || 'GAME'}</span>
+                        </div>
 
-                            {/* Right Col (31-39) */}
-                            {[31, 32, 33, 34, 35, 36, 37, 38, 39].map((i, idx) => renderTile(i, `col-start-11 row-start-${idx+2} tile-right`))}
-
-                            {/* Bottom Row (10-0 reverse) */}
-                            {renderTile(10, 'col-start-1 row-start-11 rounded-bl-xl')}
-                            {[9, 8, 7, 6, 5, 4, 3, 2, 1].map((i, idx) => renderTile(i, `col-start-${idx+2} row-start-11 tile-bottom`))}
-                            {renderTile(0, 'col-start-11 row-start-11 rounded-br-xl')}
-
-                            {/* Left Col (19-11 reverse) */}
-                            {[19, 18, 17, 16, 15, 14, 13, 12, 11].map((i, idx) => renderTile(i, `col-start-1 row-start-${idx+2} tile-left`))}
-
-                            {/* Center Logo & Dice */}
-                            <div className="center-board">
-                                <h1 className="text-4xl md:text-6xl font-black text-slate-200 rotate-[-45deg] whitespace-nowrap opacity-50 tracking-tighter">
-                                    MONOPOLI WNI
-                                </h1>
-                                
-                                <div className="absolute flex flex-col items-center justify-center z-20">
-                                    {state.turn.lastDice && (
-                                        <div className="flex gap-4 mb-8">
-                                            {state.turn.lastDice.map((d, i) => (
-                                                <div key={i} className="w-16 h-16 bg-white rounded-xl shadow-xl flex items-center justify-center text-3xl font-black text-slate-800 border-2 border-slate-200">
-                                                    {d}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* Action Area based on phase */}
-                                    {myTurn && state.turn.phase === 'WAITING_FOR_ROLL' && (
-                                        <button 
-                                            onClick={() => sendAction('ROLL')}
-                                            className="bg-red-600 text-white font-bold text-xl px-12 py-4 rounded-full shadow-lg hover:bg-red-700 transition transform hover:scale-105 animate-pulse"
-                                        >
-                                            <i className="fas fa-dice mr-2"></i> ROLL DADU
-                                        </button>
-                                    )}
-
-                                    {myTurn && state.turn.phase === 'JAIL_DECISION' && (
-                                        <div className="flex gap-2">
-                                            <button onClick={() => sendAction('ROLL')} className="bg-slate-800 text-white px-6 py-3 rounded-xl font-bold shadow hover:bg-slate-700">Roll Double</button>
-                                            <button onClick={() => sendAction('PAY_JAIL')} className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold shadow hover:bg-red-700">Bayar 500k</button>
-                                            {myPlayer.cards.includes('ORANG_DALAM') && (
-                                                <button onClick={() => sendAction('USE_CARD')} className="bg-yellow-500 text-slate-900 px-6 py-3 rounded-xl font-bold shadow hover:bg-yellow-400">Pakai Orang Dalam</button>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {myTurn && state.turn.phase === 'PROPERTY_DECISION' && (
-                                        <div className="glass-panel p-6 rounded-2xl flex flex-col items-center shadow-2xl">
-                                            <h3 className="font-bold text-lg mb-1">{BOARD_TILES[myPlayer.position].name}</h3>
-                                            <p className="text-slate-600 mb-4">{formatRp(BOARD_TILES[myPlayer.position].price)}</p>
-                                            <div className="flex gap-3">
-                                                <button onClick={() => sendAction('BUY_PROPERTY')} className="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700">BELI</button>
-                                                <button onClick={() => sendAction('SKIP_BUY')} className="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg font-bold hover:bg-slate-300">LEWAT</button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                </div>
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={toggleMute} className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white">
+                                <i className={`fas ${muted ? 'fa-volume-mute text-rose-400' : 'fa-volume-high text-emerald-400'}`}></i>
+                            </button>
                         </div>
                     </div>
 
-                    {/* Right: Players & Logs */}
-                    <div className="w-full lg:w-80 flex flex-col gap-4">
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex-1 overflow-auto">
-                            <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider mb-3">Pemain</h3>
-                            <div className="space-y-3">
-                                {state.turnOrder.map(pid => {
-                                    const p = state.players[pid];
-                                    const isActive = state.turn.currentPlayerId === pid;
-                                    return (
-                                        <div key={pid} className={`p-3 rounded-xl border-2 transition ${isActive ? 'border-red-500 bg-red-50' : 'border-transparent bg-slate-50'}`}>
-                                            <div className="flex justify-between items-center mb-1">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: p.color }}></div>
-                                                    <span className={`font-bold ${p.bankrupt ? 'line-through text-slate-400' : 'text-slate-800'}`}>{p.name}</span>
-                                                </div>
-                                                {p.jailStatus && <i className="fas fa-border-all text-slate-400"></i>}
+                    {/* Turn Status Banner */}
+                    <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 py-2 px-4 border-b border-slate-800 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-3 h-3 rounded-full animate-ping" style={{ backgroundColor: state.players[state.turn.currentPlayerId]?.color }}></div>
+                            <span className="text-xs font-black uppercase tracking-wider text-slate-300">
+                                {myTurn ? '🔥 GILIRAN KAMU!' : `Giliran: ${state.players[state.turn.currentPlayerId]?.name}`}
+                            </span>
+                        </div>
+                        <div className="text-xs font-bold text-slate-400">
+                            Saldo: <AnimatedMoney amount={myPlayer.money} />
+                        </div>
+                    </div>
+
+                    {/* Floating GAJIAN Toast */}
+                    {passGoToast && (
+                        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white font-black px-6 py-3 rounded-2xl shadow-2xl border border-emerald-400 animate-bounce flex items-center gap-2">
+                            <i className="fas fa-coins text-yellow-300 text-xl"></i> MELEWATI GAJIAN +Rp2.000.000
+                        </div>
+                    )}
+
+                    {/* Main Game Layout */}
+                    <div className="flex-1 flex flex-col lg:flex-row p-2 md:p-4 gap-4 max-w-7xl mx-auto w-full items-center lg:items-start">
+                        
+                        {/* LEFT/CENTER: Monopoly Board */}
+                        <div className="w-full lg:flex-1 flex justify-center items-center">
+                            <div className="board-wrapper">
+                                <div className="board-grid">
+                                    {/* Top Row (20 to 30) */}
+                                    {renderTile(20, 'col-start-1 row-start-1 rounded-tl-xl')}
+                                    {[21, 22, 23, 24, 25, 26, 27, 28, 29].map((i, idx) => renderTile(i, `col-start-${idx+2} row-start-1 tile-top`))}
+                                    {renderTile(30, 'col-start-11 row-start-1 rounded-tr-xl')}
+
+                                    {/* Right Col (31 to 39) */}
+                                    {[31, 32, 33, 34, 35, 36, 37, 38, 39].map((i, idx) => renderTile(i, `col-start-11 row-start-${idx+2} tile-right`))}
+
+                                    {/* Bottom Row (10 to 0) */}
+                                    {renderTile(10, 'col-start-1 row-start-11 rounded-bl-xl')}
+                                    {[9, 8, 7, 6, 5, 4, 3, 2, 1].map((i, idx) => renderTile(i, `col-start-${10-idx} row-start-11 tile-bottom`))}
+                                    {renderTile(0, 'col-start-11 row-start-11 rounded-br-xl')}
+
+                                    {/* Left Col (19 to 11) */}
+                                    {[19, 18, 17, 16, 15, 14, 13, 12, 11].map((i, idx) => renderTile(i, `col-start-1 row-start-${idx+2} tile-left`))}
+
+                                    {/* Center Board Interface */}
+                                    <div className="center-board">
+                                        <h1 className="text-2xl md:text-5xl font-black text-slate-800/40 select-none rotate-[-45deg] whitespace-nowrap tracking-tighter">
+                                            MONOPOLI WNI
+                                        </h1>
+                                        
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 z-20">
+                                            
+                                            {/* Dice Visual */}
+                                            <div className="flex gap-3 mb-4">
+                                                {(rolling ? displayDice : (state.turn.lastDice || [1, 1])).map((d, i) => (
+                                                    <div 
+                                                        key={i} 
+                                                        className={`w-12 h-12 md:w-16 md:h-16 bg-white rounded-2xl shadow-2xl flex items-center justify-center text-2xl md:text-3xl font-black text-slate-900 border-2 border-slate-300 ${rolling ? 'dice-rolling' : ''}`}
+                                                    >
+                                                        {d}
+                                                    </div>
+                                                ))}
                                             </div>
-                                            <div className="text-sm font-semibold text-green-600">{formatRp(p.money)}</div>
+
+                                            {/* ROLL Button */}
+                                            {myTurn && (state.turn.phase === 'WAITING_FOR_ROLL' || state.turn.phase === 'JAIL_DECISION') && (
+                                                <button 
+                                                    onClick={handleRollClick}
+                                                    disabled={rolling}
+                                                    className="w-full max-w-xs bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-lg py-3.5 px-8 rounded-2xl shadow-xl shadow-red-600/30 transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                                                >
+                                                    <i className="fas fa-dice text-xl"></i> {rolling ? 'ROLLING...' : 'LEMPAR DADU'}
+                                                </button>
+                                            )}
+
+                                            {!myTurn && (
+                                                <div className="text-xs md:text-sm font-extrabold text-slate-400 bg-slate-900/80 px-4 py-2 rounded-full border border-slate-800">
+                                                    Menunggu {state.players[state.turn.currentPlayerId]?.name}...
+                                                </div>
+                                            )}
                                         </div>
-                                    );
-                                })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* RIGHT / BOTTOM: Interactive Panels */}
+                        <div className="w-full lg:w-80 flex flex-col gap-3">
+                            
+                            {/* Mobile Tabs */}
+                            <div className="flex lg:hidden bg-slate-900 rounded-xl p-1 border border-slate-800">
+                                <button onClick={() => setActiveTab('board')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab === 'board' ? 'bg-red-600 text-white' : 'text-slate-400'}`}>KONTROL</button>
+                                <button onClick={() => setActiveTab('players')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab === 'players' ? 'bg-red-600 text-white' : 'text-slate-400'}`}>PEMAIN</button>
+                                <button onClick={() => setActiveTab('logs')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab === 'logs' ? 'bg-red-600 text-white' : 'text-slate-400'}`}>AKTIVITAS</button>
                             </div>
 
-                            {/* Actions for current player (Upgrade etc) */}
+                            {/* Players List */}
+                            <div className={`bg-slate-900/90 rounded-2xl border border-slate-800 p-4 ${activeTab !== 'players' ? 'hidden lg:block' : 'block'}`}>
+                                <h3 className="font-extrabold text-slate-400 uppercase text-xs tracking-wider mb-3 flex justify-between items-center">
+                                    <span>DAFTAR PEMAIN</span>
+                                    <span>{state.turnOrder.length} WNI</span>
+                                </h3>
+                                <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                                    {state.turnOrder.map(pid => {
+                                        const p = state.players[pid];
+                                        const isActive = state.turn.currentPlayerId === pid;
+                                        return (
+                                            <div key={pid} className={`p-3 rounded-xl border transition flex items-center justify-between ${isActive ? 'border-red-500/60 bg-red-500/10' : 'border-slate-800 bg-slate-800/40'}`}>
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ backgroundColor: p.color }}></div>
+                                                    <div>
+                                                        <span className={`font-bold text-sm block ${p.bankrupt ? 'line-through text-slate-500' : 'text-slate-200'}`}>{p.name}</span>
+                                                        {p.jailStatus && <span className="text-[10px] text-rose-400 font-bold"><i className="fas fa-lock mr-1"></i>Di Penjara</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="text-xs font-black text-emerald-400">
+                                                    <AnimatedMoney amount={p.money} />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Property Upgrade Manager */}
                             {myTurn && (
-                                <div className="mt-6 border-t pt-4">
-                                    <h4 className="font-bold text-xs text-slate-500 mb-2">TINDAKAN</h4>
-                                    <button onClick={() => {
-                                        if(window.confirm("Lu nyerah dan bangkrut?")) sendAction('BANKRUPT_DECLARE')
-                                    }} className="text-red-500 text-sm font-bold w-full text-left py-2 hover:bg-red-50 px-2 rounded">
-                                        <i className="fas fa-flag mr-2"></i> Nyatakan Bangkrut
+                                <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4">
+                                    <h4 className="font-extrabold text-xs text-slate-400 uppercase tracking-wider mb-2">PROPERTI KAMU</h4>
+                                    <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                                        {BOARD_TILES.filter(t => t.type === 'PROPERTY' && state.properties[t.id]?.ownerId === me.id).map(t => {
+                                            const prop = state.properties[t.id];
+                                            const group = GROUPS[t.group];
+                                            const canUpgrade = prop.level < 4 && myPlayer.money >= group.upgradePrice;
+                                            return (
+                                                <div key={t.id} className="flex items-center justify-between bg-slate-800/50 p-2 rounded-xl text-xs">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: group.color }}></div>
+                                                        <span className="font-bold text-slate-200">{t.name} ({BUILDING_NAMES[prop.level]})</span>
+                                                    </div>
+                                                    {prop.level < 4 ? (
+                                                        <button 
+                                                            onClick={() => sendAction('UPGRADE_PROPERTY', { tileId: t.id })}
+                                                            disabled={!canUpgrade}
+                                                            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold px-2.5 py-1 rounded-lg text-[10px]"
+                                                        >
+                                                            + {formatRp(group.upgradePrice)}
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-amber-400 font-bold text-[10px]">MAX</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <button 
+                                        onClick={() => { if (window.confirm('Yakin ingin menyatakan bangkrut?')) sendAction('BANKRUPT_DECLARE'); }} 
+                                        className="w-full mt-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 py-2 rounded-xl font-bold text-xs"
+                                    >
+                                        NYATAKAN BANGKRUT
                                     </button>
                                 </div>
                             )}
-                        </div>
 
-                        {/* Logs */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 h-64 flex flex-col">
-                            <h3 className="font-bold text-slate-800 uppercase text-xs tracking-wider mb-3">Aktivitas</h3>
-                            <div className="flex-1 overflow-auto text-sm space-y-2 flex flex-col-reverse">
-                                {/* Using reverse map would be better but we rely on simple state for this demo */}
-                                {state.logs && state.logs.map((l, i) => (
-                                    <div key={i} className="text-slate-600 border-b border-slate-50 pb-1 last:border-0">{l}</div>
-                                ))}
+                            {/* Activity Log */}
+                            <div className={`bg-slate-900/90 rounded-2xl border border-slate-800 p-4 h-48 flex flex-col ${activeTab !== 'logs' ? 'hidden lg:flex' : 'flex'}`}>
+                                <h3 className="font-extrabold text-slate-400 uppercase text-xs tracking-wider mb-2">AKTIVITAS</h3>
+                                <div className="flex-1 overflow-y-auto text-xs space-y-1.5 pr-1">
+                                    {state.logs && state.logs.map((l, i) => (
+                                        <div key={i} className="text-slate-300 border-b border-slate-800/60 pb-1 font-medium">{l}</div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* MODAL 1: NASIB / REALITA Card Popup */}
+                    {state.turn.activeCard && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+                            <div className={`max-w-sm w-full p-6 rounded-3xl border shadow-2xl text-center animate-card-pop ${state.turn.activeCard.type === 'CHANCE' ? 'bg-gradient-to-b from-amber-950 to-slate-900 border-amber-500/40 text-amber-100' : 'bg-gradient-to-b from-slate-900 to-indigo-950 border-indigo-500/40 text-indigo-100'}`}>
+                                <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-lg ${state.turn.activeCard.type === 'CHANCE' ? 'bg-amber-500 text-slate-950' : 'bg-indigo-500 text-white'}`}>
+                                    <i className={`fas ${state.turn.activeCard.type === 'CHANCE' ? 'fa-clover' : 'fa-triangle-exclamation'}`}></i>
+                                </div>
+                                
+                                <span className="text-xs font-black uppercase tracking-widest opacity-75">
+                                    {state.turn.activeCard.type === 'CHANCE' ? 'KARTU NASIB' : 'KARTU REALITA'}
+                                </span>
+                                
+                                <h3 className="text-xl font-black mt-2 mb-3 leading-tight">{state.turn.activeCard.text}</h3>
+
+                                {state.turn.activeCard.amount && (
+                                    <div className={`text-2xl font-black mb-6 ${state.turn.activeCard.amount > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                        {state.turn.activeCard.amount > 0 ? `+${formatRp(state.turn.activeCard.amount)}` : formatRp(state.turn.activeCard.amount)}
+                                    </div>
+                                )}
+
+                                {myTurn && (
+                                    <button 
+                                        onClick={() => sendAction('CLOSE_CARD_POPUP')}
+                                        className="w-full py-3.5 bg-white text-slate-950 font-black rounded-xl shadow-lg hover:bg-slate-200 transition active:scale-95"
+                                    >
+                                        AMBIL / LANJUT
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL 2: Property Purchase Popup */}
+                    {myTurn && state.turn.phase === 'PROPERTY_DECISION' && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+                            <div className="max-w-sm w-full bg-slate-900 rounded-3xl border border-slate-700 shadow-2xl p-6 text-center animate-card-pop">
+                                {activeTile?.group && (
+                                    <div className="h-4 rounded-full mb-4" style={{ backgroundColor: GROUPS[activeTile.group].color }}></div>
+                                )}
+                                <h3 className="text-2xl font-black text-white mb-1">{activeTile?.name}</h3>
+                                <p className="text-slate-400 text-sm font-semibold mb-4">Harga: {formatRp(activeTile?.price)}</p>
+
+                                {!canAffordProperty && (
+                                    <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold p-3 rounded-xl mb-4">
+                                        <i className="fas fa-exclamation-circle mr-1"></i> Uang lu nggak cukup.
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3">
+                                    <button 
+                                        onClick={() => sendAction('BUY_PROPERTY')}
+                                        disabled={!canAffordProperty}
+                                        className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black rounded-xl shadow-lg transition active:scale-95"
+                                    >
+                                        BELI
+                                    </button>
+                                    <button 
+                                        onClick={() => sendAction('SKIP_BUY')}
+                                        className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black rounded-xl border border-slate-700 transition active:scale-95"
+                                    >
+                                        LEWAT
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL 3: Jail Options Modal */}
+                    {myTurn && state.turn.phase === 'JAIL_DECISION' && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+                            <div className="max-w-sm w-full bg-slate-900 rounded-3xl border border-slate-700 shadow-2xl p-6 text-center animate-card-pop">
+                                <div className="w-16 h-16 bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3">
+                                    <i className="fas fa-lock"></i>
+                                </div>
+                                <h3 className="text-xl font-black text-white mb-1">KAMU DI PENJARA</h3>
+                                <p className="text-slate-400 text-xs font-semibold mb-6">Percobaan tersisa: {3 - (myPlayer.jailAttempts || 0)}</p>
+
+                                <div className="space-y-2.5">
+                                    <button 
+                                        onClick={handleRollClick}
+                                        disabled={rolling}
+                                        className="w-full py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black rounded-xl shadow-md"
+                                    >
+                                        LEMPAR DOUBLE
+                                    </button>
+                                    <button 
+                                        onClick={() => sendAction('PAY_JAIL')}
+                                        disabled={myPlayer.money < 500000}
+                                        className="w-full py-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 font-black rounded-xl border border-slate-700"
+                                    >
+                                        BAYAR Rp500.000
+                                    </button>
+                                    {myPlayer.cards.includes('ORANG_DALAM') && (
+                                        <button 
+                                            onClick={() => sendAction('USE_CARD')}
+                                            className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-md"
+                                        >
+                                            PAKAI ORANG DALAM
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             );
         };
 
-
+        // Main App Container
         const App = () => {
-            const [playerId, setPlayerId] = useLocalStorage('wni_player_id', generateId());
+            const [playerId] = useLocalStorage('wni_player_id', generateId());
             const [roomCode, setRoomCode] = useState(null);
             const [room, setRoom] = useState(null);
             const [players, setPlayers] = useState([]);
-            const [dbSetupNeeded, setDbSetupNeeded] = useState(false);
             
-            // Subscriptions ref
             const subs = useRef([]);
-
-            // Check DB Setup
-            useEffect(() => {
-                const checkDb = async () => {
-                    const { error } = await supabase.from('wni_rooms').select('id').limit(1);
-                    if (error && error.code === '42P01') { // Relation does not exist
-                        setDbSetupNeeded(true);
-                    }
-                };
-                checkDb();
-            }, []);
 
             // Subscribe to room updates
             useEffect(() => {
@@ -957,7 +1370,6 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                 
                 const playersSub = supabase.channel(`players_${roomCode}`)
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'wni_players' }, payload => {
-                        // In a real app we'd filter by room_id in the subscription, but RLS or client filter is fine for this demo
                         setPlayers(prev => {
                             const exists = prev.find(p => p.id === payload.new.id);
                             if (payload.eventType === 'DELETE') return prev.filter(p => p.id !== payload.old.id);
@@ -981,19 +1393,14 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'wni_actions', filter: `room_id=eq.${room.id}` }, async payload => {
                         const action = payload.new;
                         
-                        // Process action to get new state
                         let logQueue = [];
                         const logMsg = (msg) => logQueue.push(`[${new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}] ${msg}`);
                         
                         const newState = processAction(room.state, action, logMsg);
-                        
-                        // Prepend new logs (keep last 50)
                         newState.logs = [...logQueue, ...(newState.logs || [])].slice(0, 50);
 
-                        // Update Database state
                         await supabase.from('wni_rooms').update({ state: newState }).eq('id', room.id);
                         
-                        // If game over
                         if (newState.status === 'game_over') {
                             await supabase.from('wni_rooms').update({ status: 'finished' }).eq('id', room.id);
                         }
@@ -1008,7 +1415,7 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                     { code, host_id: playerId }
                 ]).select().single();
 
-                if (roomErr) return alert('Gagal membuat room. Cek console.');
+                if (roomErr) return alert('Gagal membuat room. Cek koneksi.');
 
                 await supabase.from('wni_players').insert([
                     { id: playerId, room_id: newRoom.id, name, color: COLORS[0], is_ready: true }
@@ -1035,28 +1442,21 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
             };
 
             const handleReady = async (isReady) => {
-                // Optimistic UI Update agar tombol merespon instan
                 setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, is_ready: isReady } : p));
-                
-                const { error } = await supabase.from('wni_players').update({ is_ready: isReady }).eq('id', playerId);
-                if (error) {
-                    console.error("Gagal update status ready:", error);
-                    // Rollback jika gagal
-                    setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, is_ready: !isReady } : p));
-                }
+                await supabase.from('wni_players').update({ is_ready: isReady }).eq('id', playerId);
             };
 
             const handleStartGame = async () => {
-                // Initialize Game State
-                const turnOrder = players.map(p => p.id).sort(() => Math.random() - 0.5); // Shuffle
+                const turnOrder = players.map(p => p.id).sort(() => Math.random() - 0.5);
                 
                 const initialState = {
+                    code: roomCode,
                     status: 'playing',
                     turnOrder,
                     turn: {
                         currentIndex: 0,
                         currentPlayerId: turnOrder[0],
-                        phase: 'WAITING_FOR_ROLL', // WAITING_FOR_ROLL, ANIMATING, PROPERTY_DECISION, JAIL_DECISION
+                        phase: 'WAITING_FOR_ROLL',
                         doublesCount: 0,
                         lastDice: null
                     },
@@ -1108,14 +1508,12 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
                 });
             };
 
-            if (dbSetupNeeded) return <SetupScreen onComplete={() => { setDbSetupNeeded(false); window.location.reload(); }} />;
-
             if (!roomCode || !room) {
                 return <Home onJoin={handleJoinRoom} onCreate={handleCreateRoom} />;
             }
 
             const me = players.find(p => p.id === playerId);
-            if (!me) return <div className="p-8 text-center text-slate-500">Menghubungkan...</div>;
+            if (!me) return <div className="p-8 text-center text-slate-400">Menghubungkan ke room...</div>;
 
             if (room.status === 'waiting') {
                 return <Lobby room={room} players={players} me={me} onReady={handleReady} onStart={handleStartGame} onLeave={handleLeave} />;
@@ -1123,11 +1521,14 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
             
             if (room.status === 'finished') {
                 return (
-                    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-900">
-                        <div className="bg-white p-8 rounded-2xl text-center shadow-2xl max-w-md w-full">
-                            <h1 className="text-4xl font-black text-slate-800 mb-2">GAME OVER</h1>
-                            <p className="text-xl mb-6 text-slate-600">Pemenang: <span className="font-bold text-red-600">{room.state.players[room.state.winner]?.name}</span></p>
-                            <button onClick={handleLeave} className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold">KEMBALI KE MENU</button>
+                    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950">
+                        <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl text-center shadow-2xl max-w-md w-full animate-card-pop">
+                            <div className="w-20 h-20 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
+                                <i className="fas fa-trophy"></i>
+                            </div>
+                            <h1 className="text-3xl font-black text-white mb-2">GAME OVER</h1>
+                            <p className="text-lg mb-6 text-slate-300">Pemenang: <span className="font-extrabold text-amber-400">{room.state.players[room.state.winner]?.name}</span></p>
+                            <button onClick={handleLeave} className="w-full bg-slate-800 hover:bg-slate-700 text-white py-4 rounded-xl font-black transition">KEMBALI KE MENU</button>
                         </div>
                     </div>
                 );
