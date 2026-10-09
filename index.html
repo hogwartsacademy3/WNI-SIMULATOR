@@ -2,1565 +2,985 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MONOPOLI WNI - Yang penting punya tanah.</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Azura's Birthday Scrapbook - By Deril</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- React & ReactDOM -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Google Fonts for Realistic Scrapbook Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Fredoka:wght@400;600&family=Inter:wght@300;400;600;700&family=Kalam:wght@400;700&family=Patrick+Hand&family=Shadows+Into+Light&display=swap" rel="stylesheet">
     
-    <!-- Babel for in-browser JSX compilation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Supabase JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- FontAwesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- St.PageFlip Library -->
+    <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
-        
-        * {
-            box-sizing: border-box;
-            touch-action: manipulation;
+        :root {
+            --cover-bg: #1e293b;
+            --cover-accent: #f59e0b;
+            --paper-light: #fefcf6;
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #0f172a; /* Slate 900 */
-            color: #f8fafc;
-            overscroll-behavior: none;
-            overflow-x: hidden;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
-
-        /* Board Container Responsive Geometry */
-        .board-wrapper {
-            width: min(98vw, calc(100vh - 210px), 760px);
-            aspect-ratio: 1 / 1;
-            margin: 0 auto;
-            position: relative;
-        }
-
-        /* Continuous Perimeter 8x8 Grid Layout */
-        .board-grid {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            width: 100%;
-            height: 100%;
-            background: #1e293b;
-            border: 3px solid #334155;
-            border-radius: 18px;
-            overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 35px rgba(239, 68, 68, 0.15);
-            position: relative;
-        }
-
-        /* Individual Tile Component */
-        .tile {
-            border: 1px solid #cbd5e1;
-            background: #ffffff;
-            color: #0f172a;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            text-align: center;
-            position: relative;
-            padding: 2px 1px;
-            overflow: hidden;
-            user-select: none;
-        }
-
-        .tile-landed {
-            animation: tilePulse 0.8s ease-in-out infinite alternate;
-            z-index: 15;
-            box-shadow: inset 0 0 0 3px #ef4444;
-        }
-
-        @keyframes tilePulse {
-            0% { filter: brightness(1); }
-            100% { filter: brightness(1.25); box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.5); }
-        }
-
-        /* Tile Header Color Strip */
-        .tile .color-header {
-            width: 100%;
-            height: 18%;
-            min-height: 8px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 2px;
-        }
-
-        /* Content Wrapper for Uniform Upright Alignment */
-        .tile-content-wrapper {
-             display: flex;
-             flex-direction: column;
-             align-items: center;
-             justify-content: space-between;
-             height: 100%;
-             width: 100%;
-             padding: 1px 0;
-        }
-
-        /* STRICT SINGLE LINE TILE TITLE - NEVER TRUNCATED OR WRAPPED */
-        .tile-title {
-            font-size: clamp(6px, 1.25vw, 10px);
-            line-height: 1;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            white-space: nowrap !important;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            width: 100%;
-            text-align: center;
-            padding: 0 1px;
-            color: #0f172a;
-        }
-
-        .tile-price {
-            font-size: clamp(5.5px, 1.1vw, 9px);
-            font-weight: 800;
-            line-height: 1;
-            color: #475569;
-            margin-top: auto;
-            margin-bottom: 1px;
-            white-space: nowrap;
-        }
-
-        /* Center Board Decorative Area */
-        .center-board {
-            grid-column: 2 / 8;
-            grid-row: 2 / 8;
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            padding: 8px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Player Tokens */
-        .player-token {
-            width: clamp(12px, 2.2vw, 18px);
-            height: clamp(12px, 2.2vw, 18px);
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.7);
-            position: absolute;
-            transition: all 0.18s cubic-bezier(0.25, 1, 0.5, 1);
-            z-index: 25;
-        }
-
-        .token-stepping {
-            transform: scale(1.4) translateY(-6px);
-            z-index: 35 !important;
-        }
-
-        /* Rolling Dice Shake Effect */
-        @keyframes diceShake {
-            0%, 100% { transform: rotate(0deg) scale(1); }
-            25% { transform: rotate(-12deg) scale(1.1); }
-            75% { transform: rotate(12deg) scale(1.1); }
-        }
-        .dice-rolling { animation: diceShake 0.2s infinite ease-in-out; }
-
-        /* Authentic Dot Dice Styling */
-        .dice-box {
-            width: clamp(42px, 8vw, 56px);
-            height: clamp(42px, 8vw, 56px);
-            background: #ffffff;
-            border-radius: 12px;
-            border: 2px solid #e2e8f0;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4), inset 0 -3px 0 rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4px;
-        }
-
-        .dice-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            width: 100%;
-            height: 100%;
-            gap: 2px;
-        }
-
-        .dice-dot {
             background-color: #0f172a;
-            border-radius: 50%;
-            width: 85%;
-            height: 85%;
-            justify-self: center;
-            align-self: center;
-        }
-        .dice-dot-red {
-            background-color: #ef4444;
+            background-image: 
+                radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            touch-action: pan-y;
         }
 
-        /* Card Popup Animation */
-        @keyframes cardPop {
-            0% { opacity: 0; transform: scale(0.8) translateY(20px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
+        /* Device Orientation Warning */
+        #orientation-warning {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            color: #f8fafc;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 24px;
         }
-        .animate-card-pop { animation: cardPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @media (max-width: 768px) and (orientation: portrait) {
+            #orientation-warning { display: flex; }
+        }
 
-        /* Floating Money FX */
-        @keyframes floatUp {
-            0% { opacity: 0; transform: translateY(8px) scale(0.9); }
-            20% { opacity: 1; transform: translateY(-4px) scale(1.1); }
-            80% { opacity: 1; transform: translateY(-20px) scale(1); }
-            100% { opacity: 0; transform: translateY(-35px) scale(0.9); }
+        .book-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
         }
-        .animate-float-money { animation: floatUp 1.5s ease-out forwards; }
+
+        /* Page Base Styling */
+        .page {
+            background-color: var(--paper-light);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.06);
+            overflow: hidden;
+            position: relative;
+            box-sizing: border-box;
+            border-radius: 4px;
+        }
+
+        /* Cover Pages */
+        .page.--cover {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 3px solid #334155;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+            color: #f59e0b;
+        }
+
+        /* Typography Helper Classes */
+        .font-handwriting { font-family: 'Kalam', cursive; }
+        .font-marker { font-family: 'Shadows Into Light', cursive; }
+        .font-typewriter { font-family: 'Courier Prime', monospace; }
+        .font-cute { font-family: 'Caveat', cursive; }
+        .font-friendly { font-family: 'Patrick Hand', cursive; }
+        .font-pop { font-family: 'Fredoka', sans-serif; }
+
+        /* Diverse Paper Background Styles */
+        .bg-kraft {
+            background-color: #e5c39e;
+            background-image: radial-gradient(#d4a373 0.8px, transparent 0.8px);
+            background-size: 12px 12px;
+        }
+        .bg-grid-blue {
+            background-color: #f8fafc;
+            background-image: linear-gradient(#cbd5e1 1px, transparent 1px), linear-gradient(90deg, #cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .bg-gingham-pink {
+            background-color: #fff1f2;
+            background-image: 
+                linear-gradient(90deg, rgba(251, 113, 133, 0.15) 50%, transparent 50%),
+                linear-gradient(rgba(251, 113, 133, 0.15) 50%, transparent 50%);
+            background-size: 24px 24px;
+        }
+        .bg-dots-yellow {
+            background-color: #fefce8;
+            background-image: radial-gradient(#fde047 2px, transparent 2px);
+            background-size: 20px 20px;
+        }
+        .bg-stripes-lavender {
+            background-color: #faf5ff;
+            background-image: repeating-linear-gradient(45deg, #f3e8ff, #f3e8ff 15px, #faf5ff 15px, #faf5ff 30px);
+        }
+        .bg-vintage-parchment {
+            background-color: #fef3c7;
+            background-image: radial-gradient(#f59e0b 0.5px, transparent 0.5px);
+            background-size: 16px 16px;
+        }
+        .bg-mint-grid {
+            background-color: #f0fdf4;
+            background-image: linear-gradient(#bbf7d0 1px, transparent 1px), linear-gradient(90deg, #bbf7d0 1px, transparent 1px);
+            background-size: 18px 18px;
+        }
+        .bg-starry-night {
+            background-color: #1e1b4b;
+            color: #f3e8ff;
+            background-image: radial-gradient(#818cf8 1px, transparent 1px);
+            background-size: 25px 25px;
+        }
+
+        /* Decorative Scrapbook Components */
+        .washi-tape {
+            position: absolute;
+            height: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            opacity: 0.85;
+            z-index: 15;
+            pointer-events: none;
+        }
+        .washi-pink { background: repeating-linear-gradient(45deg, #f472b6, #f472b6 8px, #fbcfe8 8px, #fbcfe8 16px); }
+        .washi-yellow { background: repeating-linear-gradient(-45deg, #facc15, #facc15 8px, #fef08a 8px, #fef08a 16px); }
+        .washi-blue { background: repeating-linear-gradient(45deg, #38bdf8, #38bdf8 8px, #bae6fd 8px, #bae6fd 16px); }
+        .washi-dots { background: radial-gradient(#ec4899 2px, #fce7f3 2px); background-size: 8px 8px; }
+
+        .polaroid-card {
+            background: #ffffff;
+            padding: 10px 10px 14px 10px;
+            box-shadow: 3px 6px 15px rgba(0,0,0,0.12);
+            border: 1px solid #e2e8f0;
+            border-radius: 2px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .polaroid-frame {
+            width: 100%;
+            background: #f1f5f9;
+            border: 1px dashed #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sticky-note {
+            box-shadow: 3px 5px 12px rgba(0,0,0,0.1);
+            padding: 14px;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .sticker-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            box-shadow: 1px 3px 6px rgba(0,0,0,0.1);
+        }
+
+        .stamp-mark {
+            border: 2px dashed #ef4444;
+            color: #ef4444;
+            padding: 4px 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 4px;
+            transform: rotate(-12deg);
+            opacity: 0.8;
+            font-family: 'Courier Prime', monospace;
+        }
+
+        .page-content {
+            width: 100%;
+            height: 100%;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .swipe-hint {
+            font-family: 'Kalam', cursive;
+            color: #64748b;
+            animation: pulse-swipe 2s infinite;
+        }
+
+        @keyframes pulse-swipe {
+            0%, 100% { transform: translateX(0); opacity: 0.7; }
+            50% { transform: translateX(8px); opacity: 1; }
+        }
     </style>
 </head>
-<body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between">
-    <div id="root" class="flex flex-col min-h-screen"></div>
+<body>
 
-    <script type="text/babel">
-        const SUPABASE_URL = 'https://chbkfshmnfvidyrpmivs.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_bTDfoIzuPdfpo7nRkhu0-w_rhhEF4yk';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <!-- Orientation warning modal for mobile portrait -->
+    <div id="orientation-warning">
+        <svg class="w-12 h-12 mb-3 text-amber-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+        <h2 class="text-xl font-bold mb-2">Putar Ponsel Ke Landscape</h2>
+        <p class="text-sm text-slate-300 max-w-xs">Scrapbook Azura didesain penuh dalam format landscape agar pengalaman membaca seperti buku fisik sungguhan.</p>
+    </div>
 
-        class SoundFX {
-            constructor() {
-                this.ctx = null;
-                this.muted = localStorage.getItem('wni_muted') === 'true';
-            }
-
-            init() {
-                if (!this.ctx) {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (AudioContext) this.ctx = new AudioContext();
-                }
-            }
-
-            setMuted(mute) {
-                this.muted = mute;
-                localStorage.setItem('wni_muted', mute ? 'true' : 'false');
-            }
-
-            playDice() {
-                if (this.muted) return;
-                this.init();
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(180 + Math.random() * 150, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.07);
-                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.07);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.07);
-            }
-
-            playStep() {
-                if (this.muted) return;
-                this.init();
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(450, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(850, this.ctx.currentTime + 0.06);
-                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.06);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.06);
-            }
-
-            playLand() {
-                if (this.muted) return;
-                this.init();
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
-                osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.08); // E5
-                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.22);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.22);
-            }
-
-            playMoney() {
-                if (this.muted) return;
-                this.init();
-                if (!this.ctx) return;
-                const notes = [587.33, 880];
-                notes.forEach((freq, idx) => {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
-                    gain.gain.setValueAtTime(0.18, this.ctx.currentTime + idx * 0.08);
-                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.08 + 0.18);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(this.ctx.currentTime + idx * 0.08);
-                    osc.stop(this.ctx.currentTime + idx * 0.08 + 0.18);
-                });
-            }
-        }
-
-        const audioFX = new SoundFX();
-
-        const formatRp = (num) => {
-            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
-        };
-
-        const generateId = () => Math.random().toString(36).substring(2, 9);
-        
-        const GROUPS = {
-            COKELAT: { color: '#8B4513', name: 'Cokelat', upgradePrice: 500000 },
-            BIRUMUDA: { color: '#38BDF8', name: 'Biru Muda', upgradePrice: 700000 },
-            PINK: { color: '#EC4899', name: 'Pink', upgradePrice: 900000 },
-            ORANYE: { color: '#F97316', name: 'Oranye', upgradePrice: 1100000 },
-            MERAH: { color: '#EF4444', name: 'Merah', upgradePrice: 1300000 },
-            KUNING: { color: '#EAB308', name: 'Kuning', upgradePrice: 1500000 },
-            HIJAU: { color: '#22C55E', name: 'Hijau', upgradePrice: 1750000 },
-            BIRUTUA: { color: '#1D4ED8', name: 'Biru Tua', upgradePrice: 2000000 }
-        };
-
-        const BUILDING_NAMES = ['Tanah', 'Subsidi', 'KPR', 'Ruko', 'Gedung'];
-
-        /* 
-           PATH SEQUENCE (28 Tiles Clockwise):
-           0: GAJIAN (Bottom-Right) -> Moves Left -> 7: PENJARA (Bottom-Left)
-           7: PENJARA -> Moves Up -> 14: PARKIR (Top-Left)
-           14: PARKIR -> Moves Right -> 21: POLISI (Top-Right)
-           21: POLISI -> Moves Down -> 0: GAJIAN (Bottom-Right)
-        */
-        const BOARD_TILES = [
-            { id: 0, name: 'GAJIAN', type: 'GO', desc: '+Rp2M', icon: 'fa-sack-dollar' },
-            { id: 1, name: 'Aceh', type: 'PROPERTY', group: 'COKELAT', price: 1000000, rent: [100000, 200000, 500000, 1000000, 1500000, 2000000] },
-            { id: 2, name: 'Sumut', type: 'PROPERTY', group: 'COKELAT', price: 1200000, rent: [100000, 200000, 500000, 1000000, 1500000, 2000000] },
-            { id: 3, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
-            { id: 4, name: 'KERETA', type: 'TRANSPORT', price: 2000000, icon: 'fa-train' },
-            { id: 5, name: 'Jabar', type: 'PROPERTY', group: 'BIRUMUDA', price: 1500000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
-            { id: 6, name: 'Jakarta', type: 'PROPERTY', group: 'BIRUMUDA', price: 2000000, rent: [150000, 300000, 750000, 1500000, 2000000, 2500000] },
-            { id: 7, name: 'PENJARA', type: 'JAIL_VISIT', icon: 'fa-lock' },
-            { id: 8, name: 'Jateng', type: 'PROPERTY', group: 'PINK', price: 2200000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
-            { id: 9, name: 'Jatim', type: 'PROPERTY', group: 'PINK', price: 2600000, rent: [200000, 400000, 1000000, 1750000, 2500000, 3000000] },
-            { id: 10, name: 'REALITA', type: 'COMMUNITY', icon: 'fa-triangle-exclamation' },
-            { id: 11, name: 'STASIUN', type: 'TRANSPORT', price: 2000000, icon: 'fa-subway' },
-            { id: 12, name: 'Bali', type: 'PROPERTY', group: 'ORANYE', price: 2800000, rent: [250000, 500000, 1250000, 2000000, 3000000, 3500000] },
-            { id: 13, name: 'NTB', type: 'PROPERTY', group: 'ORANYE', price: 3000000, rent: [250000, 500000, 1250000, 2000000, 3000000, 3500000] },
-            { id: 14, name: 'PARKIR', type: 'FREE_PARKING', icon: 'fa-square-parking' },
-            { id: 15, name: 'Kalbar', type: 'PROPERTY', group: 'MERAH', price: 3400000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
-            { id: 16, name: 'Kaltim', type: 'PROPERTY', group: 'MERAH', price: 3800000, rent: [300000, 600000, 1500000, 2500000, 3500000, 4000000] },
-            { id: 17, name: 'NASIB', type: 'CHANCE', icon: 'fa-clover' },
-            { id: 18, name: 'PELABUHAN', type: 'TRANSPORT', price: 2000000, icon: 'fa-ship' },
-            { id: 19, name: 'Sulsel', type: 'PROPERTY', group: 'KUNING', price: 4000000, rent: [350000, 700000, 1750000, 3000000, 4000000, 4500000] },
-            { id: 20, name: 'Sulut', type: 'PROPERTY', group: 'KUNING', price: 4200000, rent: [350000, 700000, 1750000, 3000000, 4000000, 4500000] },
-            { id: 21, name: 'POLISI', type: 'GO_TO_JAIL', icon: 'fa-gavel' },
-            { id: 22, name: 'Maluku', type: 'PROPERTY', group: 'HIJAU', price: 4600000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
-            { id: 23, name: 'Papua B.', type: 'PROPERTY', group: 'HIJAU', price: 5000000, rent: [400000, 800000, 2000000, 3500000, 4500000, 5000000] },
-            { id: 24, name: 'REALITA', type: 'COMMUNITY', icon: 'fa-triangle-exclamation' },
-            { id: 25, name: 'BANDARA', type: 'TRANSPORT', price: 2000000, icon: 'fa-plane' },
-            { id: 26, name: 'Papua', type: 'PROPERTY', group: 'BIRUTUA', price: 5500000, rent: [500000, 1000000, 2500000, 4000000, 5000000, 6000000] },
-            { id: 27, name: 'R. Ampat', type: 'PROPERTY', group: 'BIRUTUA', price: 6000000, rent: [500000, 1000000, 2500000, 4000000, 5000000, 6000000] }
-        ];
-
-        const NASIB_CARDS = [
-            { id: 1, text: 'THR TURUN', action: 'money', amount: 1000000 },
-            { id: 2, text: 'KENA TILANG', action: 'money', amount: -300000 },
-            { id: 3, text: 'KERJA SAMPINGAN', action: 'money', amount: 500000 },
-            { id: 4, text: 'MOTOR MOGOK', action: 'money', amount: -400000 },
-            { id: 5, text: 'DAPAT CASHBACK', action: 'money', amount: 200000 },
-            { id: 6, text: 'UNDANGAN NIKAH', action: 'money', amount: -250000 },
-            { id: 7, text: 'SALAH TRANSFER', action: 'money', amount: -500000 },
-            { id: 8, text: 'BENSIN NAIK', action: 'money', amount: -200000 },
-            { id: 9, text: 'BONUS KERJA', action: 'money', amount: 750000 },
-            { id: 10, text: 'KENA RAZIA', action: 'jail' },
-            { id: 11, text: 'ORANG DALAM', action: 'keep_jail_card' }
-        ];
-
-        const REALITA_CARDS = [
-            { id: 1, text: 'BAYAR TAGIHAN', action: 'money', amount: -500000 },
-            { id: 2, text: 'BAYAR KOS', action: 'money', amount: -750000 },
-            { id: 3, text: 'IURAN RT', action: 'money', amount: -100000 },
-            { id: 4, text: 'PAJAK KENDARAAN', action: 'money', amount: -400000 },
-            { id: 5, text: 'ATAP BOCOR', action: 'money', amount: -300000 },
-            { id: 6, text: 'KUOTA HABIS', action: 'money', amount: -100000 },
-            { id: 7, text: 'TEMEN MINJAM', action: 'money', amount: -250000 },
-            { id: 8, text: 'DAGANGAN LAKU', action: 'money', amount: 750000 },
-            { id: 9, text: 'KIRIMAN KELUARGA', action: 'money', amount: 500000 }
-        ];
-
-        const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
-
-        const { useState, useEffect, useRef, useCallback } = React;
-
-        const useLocalStorage = (key, initialValue) => {
-            const [storedValue, setStoredValue] = useState(() => {
-                try {
-                    const item = window.localStorage.getItem(key);
-                    return item ? JSON.parse(item) : initialValue;
-                } catch (error) {
-                    return initialValue;
-                }
-            });
-            const setValue = (value) => {
-                try {
-                    const valueToStore = value instanceof Function ? value(storedValue) : value;
-                    setStoredValue(valueToStore);
-                    window.localStorage.setItem(key, JSON.stringify(valueToStore));
-                } catch (error) {
-                    console.error(error);
-                }
-            };
-            return [storedValue, setValue];
-        };
-
-        const AnimatedMoney = ({ amount }) => {
-            const [display, setDisplay] = useState(amount);
-            const prevAmountRef = useRef(amount);
-            const [delta, setDelta] = useState(null);
-
-            useEffect(() => {
-                const diff = amount - prevAmountRef.current;
-                if (diff !== 0) {
-                    setDelta(diff);
-                    if (diff > 0) audioFX.playMoney();
-                    const timer = setTimeout(() => setDelta(null), 1800);
-
-                    const start = display;
-                    const duration = 400;
-                    const startTime = performance.now();
-
-                    const step = (now) => {
-                        const elapsed = now - startTime;
-                        const progress = Math.min(elapsed / duration, 1);
-                        setDisplay(Math.round(start + (amount - start) * progress));
-                        if (progress < 1) requestAnimationFrame(step);
-                    };
-                    requestAnimationFrame(step);
-
-                    prevAmountRef.current = amount;
-                    return () => clearTimeout(timer);
-                }
-            }, [amount]);
-
-            return (
-                <div className="relative inline-flex items-center font-black">
-                    <span>{formatRp(display)}</span>
-                    {delta !== null && (
-                        <span className={`absolute -top-6 right-0 font-extrabold text-xs animate-float-money ${delta > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {delta > 0 ? `+${formatRp(delta)}` : formatRp(delta)}
-                        </span>
-                    )}
-                </div>
-            );
-        };
-
-        const DotDice = ({ value, rolling }) => {
-            const renderDots = () => {
-                const dotMap = {
-                    1: [4],
-                    2: [0, 8],
-                    3: [0, 4, 8],
-                    4: [0, 2, 6, 8],
-                    5: [0, 2, 4, 6, 8],
-                    6: [0, 2, 3, 5, 6, 8]
-                };
-                const activeDots = dotMap[value] || [4];
-
-                return Array.from({ length: 9 }).map((_, i) => (
-                    <div 
-                        key={i} 
-                        className={`dice-dot ${activeDots.includes(i) ? 'opacity-100' : 'opacity-0'} ${value === 1 ? 'dice-dot-red' : ''}`}
-                    ></div>
-                ));
-            };
-
-            return (
-                <div className={`dice-box ${rolling ? 'dice-rolling' : ''}`}>
-                    <div className="dice-grid">
-                        {renderDots()}
-                    </div>
-                </div>
-            );
-        };
-
-        const Home = ({ onJoin, onCreate }) => {
-            const [name, setName] = useState('');
-            const [code, setCode] = useState('');
-            const [error, setError] = useState('');
-
-            const handleCreate = () => {
-                if (!name.trim()) return setError('Nama tidak boleh kosong');
-                onCreate(name);
-            };
-
-            const handleJoin = () => {
-                if (!name.trim()) return setError('Nama tidak boleh kosong');
-                if (!code.trim()) return setError('Kode room tidak boleh kosong');
-                onJoin(code.toUpperCase(), name);
-            };
-
-            return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-950 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(239,68,68,0.25),rgba(255,255,255,0))]">
-                    <div className="max-w-md w-full bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-slate-800 p-6 md:p-8">
-                        <div className="text-center mb-8">
-                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 text-white shadow-lg shadow-red-500/30 mb-4">
-                                <i className="fas fa-building text-3xl"></i>
-                            </div>
-                            <h1 className="text-4xl font-black text-white tracking-tight">MONOPOLI<span className="text-red-500">WNI</span></h1>
-                            <p className="text-slate-400 mt-2 text-sm italic font-medium">"Yang penting punya tanah."</p>
-                        </div>
-
-                        {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl mb-4 text-xs font-bold text-center">{error}</div>}
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nama Pemain</label>
-                                <input 
-                                    type="text" 
-                                    maxLength="12"
-                                    value={name} 
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="w-full bg-slate-800/80 border border-slate-700/80 text-white rounded-xl px-4 py-3.5 focus:outline-none focus:border-red-500 font-bold transition placeholder-slate-500"
-                                    placeholder="Masukkan nama kamu..."
-                                />
-                            </div>
-
-                            <button onClick={handleCreate} className="w-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-black py-4 rounded-xl shadow-lg shadow-red-600/25 hover:from-red-500 hover:to-rose-500 transition active:scale-[0.98] flex justify-center items-center gap-2">
-                                <i className="fas fa-plus-circle text-lg"></i> BUAT ROOM BARU
-                            </button>
-
-                            <div className="flex items-center my-4">
-                                <div className="flex-grow border-t border-slate-800"></div>
-                                <span className="px-4 text-slate-500 text-xs font-extrabold uppercase tracking-widest">ATAU</span>
-                                <div className="flex-grow border-t border-slate-800"></div>
-                            </div>
-
-                            <div className="flex gap-2">
-                                <input 
-                                    type="text" 
-                                    value={code} 
-                                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                                    className="w-full bg-slate-800/80 border border-slate-700/80 text-white rounded-xl px-4 py-3.5 focus:outline-none focus:border-red-500 uppercase font-black tracking-widest transition placeholder-slate-500"
-                                    placeholder="KODE ROOM"
-                                />
-                                <button onClick={handleJoin} className="bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 font-bold px-6 rounded-xl transition active:scale-[0.98] whitespace-nowrap">
-                                    GABUNG
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const Lobby = ({ room, players, me, onReady, onStart, onLeave }) => {
-            const isHost = room.host_id === me.id;
-            const allReady = players.every(p => p.is_ready);
-
-            return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-950">
-                    <div className="max-w-xl w-full bg-slate-900 rounded-3xl shadow-2xl border border-slate-800 overflow-hidden">
-                        <div className="bg-slate-800/80 p-6 flex justify-between items-center border-b border-slate-700/50">
-                            <div>
-                                <p className="text-xs text-slate-400 uppercase tracking-widest font-extrabold">Kode Room</p>
-                                <h2 className="text-3xl font-black tracking-widest text-white">{room.code}</h2>
-                            </div>
-                            <button onClick={onLeave} className="text-slate-400 hover:text-rose-400 transition p-2"><i className="fas fa-sign-out-alt text-xl"></i></button>
-                        </div>
-                        
-                        <div className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="font-extrabold text-slate-300 text-sm tracking-wider uppercase">Pemain ({players.length}/8)</span>
-                                {players.length < 2 && <span className="text-rose-400 text-xs font-bold bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">Butuh min. 2 pemain</span>}
-                            </div>
-                            
-                            <div className="grid gap-3 mb-6 max-h-72 overflow-y-auto pr-1">
-                                {players.map(p => (
-                                    <div key={p.id} className="flex items-center justify-between p-3.5 bg-slate-800/50 rounded-2xl border border-slate-700/40">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full shadow-md border-2 border-white/20" style={{ backgroundColor: p.color }}></div>
-                                            <span className="font-bold text-slate-200">
-                                                {p.name} {p.id === room.host_id && <i className="fas fa-crown text-amber-400 ml-1.5" title="Host"></i>}
-                                                {p.id === me.id && <span className="text-xs text-slate-400 font-semibold ml-2">(Kamu)</span>}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            {p.is_ready 
-                                                ? <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1.5 rounded-full font-black tracking-wider">READY</span>
-                                                : <span className="bg-slate-700/50 text-slate-400 border border-slate-600/30 text-xs px-3 py-1.5 rounded-full font-black tracking-wider">WAITING</span>
-                                            }
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="flex gap-3">
-                                <button 
-                                    onClick={() => onReady(!me.is_ready)}
-                                    className={`flex-1 py-4 rounded-xl font-black tracking-wider transition active:scale-[0.98] ${me.is_ready ? 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700' : 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500'}`}
-                                >
-                                    {me.is_ready ? 'BATAL READY' : 'SAYA READY'}
-                                </button>
-                                
-                                {isHost && (
-                                    <button 
-                                        onClick={onStart}
-                                        disabled={!allReady || players.length < 2}
-                                        className={`flex-1 py-4 rounded-xl font-black tracking-wider transition active:scale-[0.98] ${allReady && players.length >= 2 ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-600/25 hover:from-red-500 hover:to-rose-500' : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-800'}`}
-                                    >
-                                        MULAI GAME
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const processAction = (state, action, logMsg) => {
-            const newState = JSON.parse(JSON.stringify(state));
-            const player = newState.players[action.player_id];
+    <!-- Main Book Container -->
+    <div class="book-container">
+        <div id="scrapbook">
             
-            if (!player) return newState;
-
-            const nextTurn = () => {
-                newState.turn.doublesCount = 0;
-                let nextIdx = (newState.turn.currentIndex + 1) % newState.turnOrder.length;
-                
-                let iterations = 0;
-                while(newState.players[newState.turnOrder[nextIdx]].bankrupt && iterations < newState.turnOrder.length) {
-                    nextIdx = (nextIdx + 1) % newState.turnOrder.length;
-                    iterations++;
-                }
-                
-                newState.turn.currentIndex = nextIdx;
-                newState.turn.currentPlayerId = newState.turnOrder[nextIdx];
-                newState.turn.phase = 'WAITING_FOR_ROLL';
-                
-                const nextPlayer = newState.players[newState.turn.currentPlayerId];
-                if (nextPlayer.jailStatus) {
-                    newState.turn.phase = 'JAIL_DECISION';
-                }
-            };
-
-            const checkBankrupt = (playerId) => {
-                if (newState.players[playerId].money < 0) {
-                    player.bankrupt = true;
-                    logMsg(`💥 ${player.name} BANGKRUT!`);
-                    Object.keys(newState.properties).forEach(id => {
-                        if (newState.properties[id].ownerId === player.id) {
-                            newState.properties[id] = { ownerId: null, level: 0, mortgaged: false };
-                        }
-                    });
-                    const activePlayers = newState.turnOrder.filter(id => !newState.players[id].bankrupt);
-                    if (activePlayers.length === 1) {
-                        newState.status = 'game_over';
-                        newState.winner = activePlayers[0];
-                        logMsg(`🏆 ${newState.players[activePlayers[0]].name} MENANG!`);
-                    } else {
-                        nextTurn();
-                    }
-                    return true;
-                }
-                return false;
-            };
-
-            switch (action.type) {
-                case 'ROLL': {
-                    if (newState.turn.phase !== 'WAITING_FOR_ROLL' && newState.turn.phase !== 'JAIL_DECISION') break;
+            <!-- PAGE 1: Front Cover -->
+            <div class="page --cover" data-density="hard">
+                <div class="page-content flex flex-col items-center justify-between py-10 text-center">
+                    <div class="wasi-tape washi-yellow w-32 top-6 left-10 transform -rotate-12"></div>
+                    <div class="wasi-tape washi-pink w-32 top-6 right-10 transform rotate-12"></div>
                     
-                    const d1 = action.payload?.d1 || (Math.floor(Math.random() * 6) + 1);
-                    const d2 = action.payload?.d2 || (Math.floor(Math.random() * 6) + 1);
-                    const isDouble = d1 === d2;
-                    newState.turn.lastDice = [d1, d2];
-                    
-                    logMsg(`${player.name} melempar dadu: ${d1} & ${d2} ${isDouble ? '(Double!)' : ''}`);
-
-                    if (player.jailStatus) {
-                        if (isDouble) {
-                            player.jailStatus = false;
-                            player.jailAttempts = 0;
-                            logMsg(`${player.name} keluar penjara (Double)!`);
-                        } else {
-                            player.jailAttempts = (player.jailAttempts || 0) + 1;
-                            if (player.jailAttempts >= 3) {
-                                logMsg(`${player.name} gagal double 3x. Bayar denda Rp500rb.`);
-                                player.money -= 500000;
-                                player.jailStatus = false;
-                                player.jailAttempts = 0;
-                            } else {
-                                logMsg(`${player.name} tetap di penjara.`);
-                                nextTurn();
-                                break;
-                            }
-                        }
-                    }
-
-                    if (isDouble && !player.jailStatus) {
-                        newState.turn.doublesCount = (newState.turn.doublesCount || 0) + 1;
-                        if (newState.turn.doublesCount === 3) {
-                            logMsg(`${player.name} kena tilang ngebut (Double 3x). Masuk Penjara!`);
-                            player.jailStatus = true;
-                            newState.turn.targetPosition = 7;
-                            newState.turn.phase = 'ANIMATING_MOVE';
-                            break;
-                        }
-                    } else {
-                        newState.turn.doublesCount = 0;
-                    }
-
-                    // STRICT CALCULATED MOVE DESTINATION
-                    const startPos = player.position;
-                    const steps = d1 + d2;
-                    const targetPos = (startPos + steps) % 28;
-                    
-                    newState.turn.targetPosition = targetPos;
-                    newState.turn.phase = 'ANIMATING_MOVE';
-                    break;
-                }
-
-                case 'TOKEN_ARRIVED': {
-                    if (newState.turn.phase !== 'ANIMATING_MOVE' || newState.turn.currentPlayerId !== action.player_id) break;
-                    
-                    const oldPos = player.position;
-                    player.position = newState.turn.targetPosition;
-                    
-                    // Check pass GO (Gajian)
-                    if (player.position < oldPos && player.position !== 7 && !player.jailStatus) {
-                        player.money += 2000000;
-                        logMsg(`${player.name} melewati GAJIAN, dapat Rp2.000.000`);
-                    }
-
-                    const tile = BOARD_TILES[player.position];
-                    
-                    if (tile.type === 'PROPERTY' || tile.type === 'TRANSPORT') {
-                        const propState = newState.properties[tile.id];
-                        if (!propState.ownerId) {
-                            newState.turn.phase = 'PROPERTY_DECISION';
-                        } else if (propState.ownerId !== player.id && !propState.mortgaged) {
-                            // Rent Logic
-                            let rent = 0;
-                            const owner = propState.ownerId;
-                            if (tile.type === 'PROPERTY') {
-                                rent = tile.rent[propState.level];
-                                if (propState.level === 0) {
-                                    const groupTiles = BOARD_TILES.filter(t => t.group === tile.group).map(t => t.id);
-                                    const ownsAll = groupTiles.every(tid => newState.properties[tid].ownerId === owner);
-                                    if (ownsAll) rent *= 2;
-                                }
-                            } else if (tile.type === 'TRANSPORT') {
-                                const transCount = BOARD_TILES.filter(t => t.type === 'TRANSPORT').filter(t => newState.properties[t.id].ownerId === owner).length;
-                                rent = 250000 * Math.pow(2, transCount - 1);
-                            }
-                            
-                            logMsg(`${player.name} bayar sewa Rp${rent.toLocaleString('id-ID')} ke ${newState.players[owner].name}`);
-                            player.money -= rent;
-                            newState.players[owner].money += rent;
-                            
-                            if (checkBankrupt(player.id)) break;
-                            
-                            if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
-                            else nextTurn();
-                        } else {
-                            if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
-                            else nextTurn();
-                        }
-                    } else if (tile.type === 'GO_TO_JAIL') {
-                        logMsg(`${player.name} DITANGKAP POLISI! Masuk Penjara.`);
-                        player.position = 7;
-                        player.jailStatus = true;
-                        newState.turn.doublesCount = 0;
-                        nextTurn();
-                    } else if (tile.type === 'CHANCE' || tile.type === 'COMMUNITY') {
-                        const cardArr = tile.type === 'CHANCE' ? NASIB_CARDS : REALITA_CARDS;
-                        const card = cardArr[Math.floor(Math.random() * cardArr.length)];
-                        newState.turn.activeCard = { ...card, cardType: tile.type };
-                        newState.turn.phase = 'CARD_POPUP';
-                        logMsg(`${player.name} dapat kartu: ${card.text}`);
-                    } else {
-                        // GO or FREE PARKING or VISITING JAIL
-                        if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
-                        else nextTurn();
-                    }
-                    break;
-                }
-
-                case 'BUY_PROPERTY': {
-                    const tile = BOARD_TILES[player.position];
-                    if (player.money < tile.price) break;
-                    
-                    player.money -= tile.price;
-                    newState.properties[tile.id].ownerId = player.id;
-                    logMsg(`${player.name} membeli ${tile.name}`);
-                    
-                    if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
-                    else nextTurn();
-                    break;
-                }
-
-                case 'SKIP_BUY': {
-                    if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
-                    else nextTurn();
-                    break;
-                }
-
-                case 'CLOSE_CARD_POPUP': {
-                    const card = newState.turn.activeCard;
-                    delete newState.turn.activeCard;
-
-                    if (!card) {
-                        if (newState.turn.doublesCount > 0) newState.turn.phase = 'WAITING_FOR_ROLL';
-                        else nextTurn();
-                        break;
-                    }
-
-                    if (card.action === 'money') {
-                        player.money += card.amount;
-                        if (checkBankrupt(player.id)) break;
-                    } else if (card.action === 'jail') {
-                        player.jailStatus = true;
-                        player.position = 7;
-                        newState.turn.doublesCount = 0;
-                        nextTurn();
-                        break;
-                    } else if (card.action === 'keep_jail_card') {
-                        player.cards = player.cards || [];
-                        player.cards.push('ORANG_DALAM');
-                    }
-
-                    if (newState.turn.doublesCount > 0 && !player.jailStatus) newState.turn.phase = 'WAITING_FOR_ROLL';
-                    else nextTurn();
-                    break;
-                }
-
-                case 'UPGRADE_PROPERTY': {
-                    const { tileId } = action.payload;
-                    const tile = BOARD_TILES[tileId];
-                    const group = GROUPS[tile.group];
-                    const prop = newState.properties[tileId];
-
-                    if (prop.ownerId === player.id && prop.level < 4 && player.money >= group.upgradePrice) {
-                        player.money -= group.upgradePrice;
-                        prop.level++;
-                        logMsg(`${player.name} meningkatkan ${tile.name} ke level ${BUILDING_NAMES[prop.level]}`);
-                    }
-                    break;
-                }
-                
-                case 'PAY_JAIL': {
-                    if (player.money >= 500000) {
-                        player.money -= 500000;
-                        player.jailStatus = false;
-                        logMsg(`${player.name} bayar denda penjara Rp500rb`);
-                        newState.turn.phase = 'WAITING_FOR_ROLL';
-                    }
-                    break;
-                }
-
-                case 'USE_CARD': {
-                    if (player.cards && player.cards.includes('ORANG_DALAM')) {
-                        player.cards = player.cards.filter(c => c !== 'ORANG_DALAM');
-                        player.jailStatus = false;
-                        logMsg(`${player.name} pakai kartu ORANG DALAM!`);
-                        newState.turn.phase = 'WAITING_FOR_ROLL';
-                    }
-                    break;
-                }
-                
-                case 'BANKRUPT_DECLARE': {
-                    checkBankrupt(player.id);
-                    break;
-                }
-            }
-
-            return newState;
-        };
-
-        const GameBoard = ({ state, me, sendAction }) => {
-            const myTurn = state.turn.currentPlayerId === me.id;
-            const myPlayer = state.players[me.id];
-            
-            const [rolling, setRolling] = useState(false);
-            const [displayDice, setDisplayDice] = useState([1, 1]);
-            const [visualPositions, setVisualPositions] = useState({});
-            const [isLocalAnimating, setIsLocalAnimating] = useState(false);
-            const [passGoToast, setPassGoToast] = useState(false);
-            const [activeTab, setActiveTab] = useState('board');
-            const [muted, setMuted] = useState(audioFX.muted);
-
-            // Sync visual positions & animate movement strictly step-by-step
-            useEffect(() => {
-                if (!state?.players) return;
-                
-                // Initialize positions on load
-                if (Object.keys(visualPositions).length === 0) {
-                    const initVisuals = {};
-                    Object.keys(state.players).forEach(pid => {
-                        initVisuals[pid] = state.players[pid].position;
-                    });
-                    setVisualPositions(initVisuals);
-                    return;
-                }
-
-                const activePlayerId = state.turn.currentPlayerId;
-                const currentVisual = visualPositions[activePlayerId] !== undefined 
-                    ? visualPositions[activePlayerId] 
-                    : state.players[activePlayerId]?.position;
-
-                if (state.turn.phase === 'ANIMATING_MOVE' && !isLocalAnimating && currentVisual !== undefined) {
-                    const targetPos = state.turn.targetPosition;
-                    
-                    if (currentVisual !== targetPos) {
-                        runStepByStepAnimation(activePlayerId, currentVisual, targetPos);
-                    } else {
-                        // Position already matches target
-                        if (myTurn) {
-                            sendAction('TOKEN_ARRIVED');
-                        }
-                    }
-                }
-            }, [state?.turn?.phase, state?.turn?.targetPosition, state?.turn?.currentPlayerId]);
-
-            const runStepByStepAnimation = (pid, start, end) => {
-                setIsLocalAnimating(true);
-                let current = start;
-
-                const stepInterval = setInterval(() => {
-                    current = (current + 1) % 28;
-                    audioFX.playStep();
-                    
-                    if (current === 0) {
-                        setPassGoToast(true);
-                        setTimeout(() => setPassGoToast(false), 1800);
-                    }
-
-                    setVisualPositions(prev => ({ ...prev, [pid]: current }));
-
-                    if (current === end) {
-                        clearInterval(stepInterval);
-                        audioFX.playLand();
-                        
-                        setTimeout(() => {
-                            setIsLocalAnimating(false);
-                            if (pid === me.id) {
-                                sendAction('TOKEN_ARRIVED');
-                            }
-                        }, 250);
-                    }
-                }, 200); // Smooth 200ms step duration
-            };
-
-            const handleRollClick = () => {
-                if (!myTurn || rolling || isLocalAnimating || (state.turn.phase !== 'WAITING_FOR_ROLL' && state.turn.phase !== 'JAIL_DECISION')) return;
-                
-                setRolling(true);
-                audioFX.playDice();
-
-                let rolls = 0;
-                const finalD1 = Math.floor(Math.random() * 6) + 1;
-                const finalD2 = Math.floor(Math.random() * 6) + 1;
-
-                const interval = setInterval(() => {
-                    setDisplayDice([
-                        Math.floor(Math.random() * 6) + 1,
-                        Math.floor(Math.random() * 6) + 1
-                    ]);
-                    audioFX.playDice();
-                    rolls++;
-
-                    if (rolls > 8) {
-                        clearInterval(interval);
-                        setDisplayDice([finalD1, finalD2]);
-                        setRolling(false);
-                        sendAction('ROLL', { d1: finalD1, d2: finalD2 });
-                    }
-                }, 90);
-            };
-
-            const toggleMute = () => {
-                const nextMute = !muted;
-                setMuted(nextMute);
-                audioFX.setMuted(nextMute);
-            };
-
-            const renderTile = (idx, classNames) => {
-                const tile = BOARD_TILES[idx];
-                const propState = state.properties[idx];
-                const owner = propState?.ownerId ? state.players[propState.ownerId] : null;
-                
-                const playersHere = state.turnOrder.filter(pid => {
-                    const pos = visualPositions[pid] !== undefined ? visualPositions[pid] : state.players[pid].position;
-                    return pos === idx && !state.players[pid].bankrupt;
-                });
-
-                const isLanded = playersHere.some(pid => pid === state.turn.currentPlayerId && !isLocalAnimating && state.turn.phase !== 'ANIMATING_MOVE');
-
-                return (
-                    <div key={idx} className={`tile ${classNames} ${isLanded ? 'tile-landed' : ''}`}>
-                        
-                        {tile.group && (
-                            <div className="color-header" style={{ backgroundColor: GROUPS[tile.group].color }}>
-                                {propState?.level > 0 && (
-                                    <span className="text-white text-[8px] font-black drop-shadow">
-                                        {propState.level === 4 ? '🏬' : '🏠'.repeat(propState.level)}
-                                    </span>
-                                )}
-                            </div>
-                        )}
-                        
-                        <div className="tile-content-wrapper">
-                            <span className="tile-title" title={tile.name}>
-                                {tile.name}
-                            </span>
-                            
-                            {tile.icon && <i className={`fas ${tile.icon} text-slate-500 text-[10px] sm:text-xs my-0.5`}></i>}
-                            
-                            {tile.price && (
-                                <span className="tile-price">
-                                    {formatRp(tile.price).replace(',00', '').replace('Rp', '')}
-                                </span>
-                            )}
-                        </div>
-
-                        {owner && (
-                            <div className="absolute bottom-0 left-0 w-full h-1 md:h-1.5" style={{ backgroundColor: owner.color }} title={`Milik ${owner.name}`}></div>
-                        )}
-                        
-                        <div className="absolute inset-0 flex flex-wrap items-center justify-center p-0.5 pointer-events-none gap-0.5 z-20">
-                            {playersHere.map((pid, pIdx) => (
-                                <div 
-                                    key={pid} 
-                                    className={`player-token ${isLocalAnimating && state.turn.currentPlayerId === pid ? 'token-stepping' : ''}`} 
-                                    style={{ 
-                                        backgroundColor: state.players[pid].color,
-                                        transform: `translate(${(pIdx % 2) * 2}px, ${Math.floor(pIdx / 2) * 2}px)`
-                                    }}
-                                    title={state.players[pid].name}
-                                ></div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            };
-
-            const activeTile = BOARD_TILES[myPlayer.position];
-            const canAffordProperty = activeTile?.price ? myPlayer.money >= activeTile.price : false;
-
-            // Strict modal gate: Do not show popups while token is animated or moving
-            const showPropertyModal = myTurn && !isLocalAnimating && state.turn.phase === 'PROPERTY_DECISION';
-            const showCardModal = !isLocalAnimating && state.turn.phase === 'CARD_POPUP' && state.turn.activeCard;
-            const showJailModal = myTurn && !isLocalAnimating && state.turn.phase === 'JAIL_DECISION';
-
-            return (
-                <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100">
-                    {/* Top Bar */}
-                    <div className="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between sticky top-0 z-40">
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-lg md:text-xl font-black tracking-tight text-white">MONOPOLI<span className="text-red-500">WNI</span></h1>
-                            <span className="bg-slate-800 text-slate-400 text-xs px-2.5 py-1 rounded-full border border-slate-700 font-mono font-bold">{state.code || 'GAME'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={toggleMute} className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition">
-                                <i className={`fas ${muted ? 'fa-volume-mute text-rose-400' : 'fa-volume-high text-emerald-400'}`}></i>
-                            </button>
-                        </div>
+                    <div class="mt-8 border-4 border-amber-400 p-6 rounded-xl bg-slate-900/60 backdrop-blur-sm relative max-w-xs">
+                        <span class="sticker-badge bg-amber-500 text-slate-950 absolute -top-4 -right-3 shadow-lg">SPECIAL EDITION</span>
+                        <h1 class="font-pop text-4xl md:text-5xl font-bold text-amber-400 tracking-wide mb-2">AZURA'S</h1>
+                        <h2 class="font-marker text-3xl md:text-4xl text-rose-300">Birthday Book</h2>
+                        <div class="w-full h-0.5 bg-amber-400/40 my-3"></div>
+                        <p class="font-typewriter text-xs text-slate-300 uppercase tracking-widest">Captured Memories & Thoughts</p>
                     </div>
 
-                    {/* Turn Status Indicator */}
-                    <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 py-2 px-4 border-b border-slate-800 flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-3 h-3 rounded-full animate-ping" style={{ backgroundColor: state.players[state.turn.currentPlayerId]?.color }}></div>
-                            <span className="text-xs font-black uppercase tracking-wider text-slate-300">
-                                {myTurn ? '🎲 GILIRAN KAMU!' : `Giliran: ${state.players[state.turn.currentPlayerId]?.name}`}
-                            </span>
+                    <div class="my-auto py-4">
+                        <div class="w-24 h-24 rounded-full bg-amber-400/10 border-2 border-dashed border-amber-400 flex items-center justify-center mx-auto mb-2">
+                            <svg class="w-12 h-12 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V6a2 2 0 10-2 2h2zm0 13C10.832 21 2 13.52 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 5.02-8.832 12.5-10 12.5z"></path></svg>
                         </div>
-                        <div className="text-xs font-bold text-slate-400">
-                            Saldo: <AnimatedMoney amount={myPlayer.money} />
-                        </div>
+                        <p class="font-cute text-2xl text-amber-200">A special chapter dedicated to Azura Bell</p>
                     </div>
 
-                    {passGoToast && (
-                        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white font-black px-6 py-3 rounded-2xl shadow-2xl border border-emerald-400 animate-bounce flex items-center gap-2">
-                            <i className="fas fa-coins text-yellow-300 text-xl"></i> LEWAT GAJIAN +Rp2 Juta!
-                        </div>
-                    )}
-
-                    {/* Main Workspace */}
-                    <div className="flex-1 flex flex-col lg:flex-row p-2 md:p-4 gap-4 max-w-7xl mx-auto w-full items-center lg:items-start">
-                        
-                        {/* Board View */}
-                        <div className="w-full lg:flex-1 flex justify-center items-center">
-                            <div className="board-wrapper">
-                                <div className="board-grid">
-                                    {/* Top Row (14 to 21) */}
-                                    {renderTile(14, 'col-start-1 row-start-1 rounded-tl-xl')}
-                                    {[15, 16, 17, 18, 19, 20].map((i, idx) => renderTile(i, `col-start-${idx+2} row-start-1`))}
-                                    {renderTile(21, 'col-start-8 row-start-1 rounded-tr-xl')}
-
-                                    {/* Right Col (22 to 27) */}
-                                    {[22, 23, 24, 25, 26, 27].map((i, idx) => renderTile(i, `col-start-8 row-start-${idx+2}`))}
-
-                                    {/* Bottom Row (7 to 0) -> 7 is Bottom-Left, 0 is Bottom-Right */}
-                                    {renderTile(7, 'col-start-1 row-start-8 rounded-bl-xl')}
-                                    {[6, 5, 4, 3, 2, 1].map((i, idx) => renderTile(i, `col-start-${7-idx} row-start-8`))}
-                                    {renderTile(0, 'col-start-8 row-start-8 rounded-br-xl')}
-
-                                    {/* Left Col (13 to 8) -> 13 is just under 14 */}
-                                    {[13, 12, 11, 10, 9, 8].map((i, idx) => renderTile(i, `col-start-1 row-start-${idx+2}`))}
-
-                                    {/* Center Controls & Dice */}
-                                    <div className="center-board">
-                                        <h1 className="text-2xl md:text-4xl font-black text-slate-800/40 select-none rotate-[-45deg] whitespace-nowrap tracking-tighter opacity-50">
-                                            MONOPOLI WNI
-                                        </h1>
-                                        
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 z-20">
-                                            {/* Authentic Dot Dice */}
-                                            <div className="flex gap-3 mb-4">
-                                                {(rolling ? displayDice : (state.turn.lastDice || [1, 1])).map((d, i) => (
-                                                    <DotDice key={i} value={d} rolling={rolling} />
-                                                ))}
-                                            </div>
-
-                                            {myTurn && !isLocalAnimating && (state.turn.phase === 'WAITING_FOR_ROLL' || state.turn.phase === 'JAIL_DECISION') && (
-                                                <button 
-                                                    onClick={handleRollClick}
-                                                    disabled={rolling}
-                                                    className="w-full max-w-[200px] bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-sm md:text-base py-3 px-6 rounded-2xl shadow-xl shadow-red-600/30 transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-                                                >
-                                                    <i className="fas fa-dice text-xl"></i> {rolling ? 'KOCOK...' : 'LEMPAR DADU'}
-                                                </button>
-                                            )}
-
-                                            {(!myTurn || isLocalAnimating || state.turn.phase === 'ANIMATING_MOVE') && (
-                                                <div className="text-xs md:text-sm font-extrabold text-slate-400 bg-slate-900/80 px-4 py-2 rounded-full border border-slate-800 flex items-center gap-2">
-                                                    {isLocalAnimating ? (
-                                                        <span><i className="fas fa-walking text-red-500 animate-bounce mr-1"></i> Berjalan...</span>
-                                                    ) : (
-                                                        <span>Menunggu {state.players[state.turn.currentPlayerId]?.name}...</span>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Sidebar */}
-                        <div className="w-full lg:w-80 flex flex-col gap-3">
-                            <div className="flex lg:hidden bg-slate-900 rounded-xl p-1 border border-slate-800">
-                                <button onClick={() => setActiveTab('board')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab === 'board' ? 'bg-red-600 text-white' : 'text-slate-400'}`}>BOARD</button>
-                                <button onClick={() => setActiveTab('players')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab === 'players' ? 'bg-red-600 text-white' : 'text-slate-400'}`}>PEMAIN</button>
-                                <button onClick={() => setActiveTab('logs')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab === 'logs' ? 'bg-red-600 text-white' : 'text-slate-400'}`}>LOGS</button>
-                            </div>
-
-                            <div className={`bg-slate-900/90 rounded-2xl border border-slate-800 p-4 ${activeTab !== 'players' ? 'hidden lg:block' : 'block'}`}>
-                                <h3 className="font-extrabold text-slate-400 uppercase text-xs tracking-wider mb-3 flex justify-between items-center">
-                                    <span>DAFTAR PEMAIN</span>
-                                    <span>{state.turnOrder.length} PEMAIN</span>
-                                </h3>
-                                <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
-                                    {state.turnOrder.map(pid => {
-                                        const p = state.players[pid];
-                                        const isActive = state.turn.currentPlayerId === pid;
-                                        return (
-                                            <div key={pid} className={`p-3 rounded-xl border transition flex items-center justify-between ${isActive ? 'border-red-500/60 bg-red-500/10' : 'border-slate-800 bg-slate-800/40'}`}>
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" style={{ backgroundColor: p.color }}></div>
-                                                    <div className="overflow-hidden">
-                                                        <span className={`font-bold text-sm block truncate ${p.bankrupt ? 'line-through text-slate-500' : 'text-slate-200'}`}>{p.name}</span>
-                                                        {p.jailStatus && <span className="text-[10px] text-rose-400 font-bold"><i className="fas fa-lock mr-1"></i>Penjara</span>}
-                                                    </div>
-                                                </div>
-                                                <div className="text-xs font-black text-emerald-400 shrink-0 ml-2">
-                                                    <AnimatedMoney amount={p.money} />
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {myTurn && (
-                                <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4">
-                                    <h4 className="font-extrabold text-xs text-slate-400 uppercase tracking-wider mb-2">PROPERTI SAYA</h4>
-                                    <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
-                                        {BOARD_TILES.filter(t => t.type === 'PROPERTY' && state.properties[t.id]?.ownerId === me.id).map(t => {
-                                            const prop = state.properties[t.id];
-                                            const group = GROUPS[t.group];
-                                            const canUpgrade = prop.level < 4 && myPlayer.money >= group.upgradePrice;
-                                            return (
-                                                <div key={t.id} className="flex items-center justify-between bg-slate-800/50 p-2 rounded-xl text-xs">
-                                                    <div className="flex items-center gap-2 overflow-hidden">
-                                                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: group.color }}></div>
-                                                        <span className="font-bold text-slate-200 truncate">{t.name} ({BUILDING_NAMES[prop.level]})</span>
-                                                    </div>
-                                                    {prop.level < 4 ? (
-                                                        <button 
-                                                            onClick={() => sendAction('UPGRADE_PROPERTY', { tileId: t.id })}
-                                                            disabled={!canUpgrade}
-                                                            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold px-2.5 py-1 rounded-lg text-[10px] shrink-0 ml-2"
-                                                        >
-                                                            + {formatRp(group.upgradePrice).replace('Rp', '')}
-                                                        </button>
-                                                    ) : (
-                                                        <span className="text-amber-400 font-bold text-[10px] shrink-0 ml-2">MAX</span>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                        {BOARD_TILES.filter(t => t.type === 'PROPERTY' && state.properties[t.id]?.ownerId === me.id).length === 0 && (
-                                            <div className="text-xs text-slate-500 text-center py-2 italic">Belum ada aset properti</div>
-                                        )}
-                                    </div>
-                                    <button 
-                                        onClick={() => { if (window.confirm('Yakin ingin menyatakan bangkrut?')) sendAction('BANKRUPT_DECLARE'); }} 
-                                        className="w-full mt-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 py-2 rounded-xl font-bold text-xs transition"
-                                    >
-                                        NYATAKAN BANGKRUT
-                                    </button>
-                                </div>
-                            )}
-
-                            <div className={`bg-slate-900/90 rounded-2xl border border-slate-800 p-4 h-44 flex flex-col ${activeTab !== 'logs' ? 'hidden lg:flex' : 'flex'}`}>
-                                <h3 className="font-extrabold text-slate-400 uppercase text-xs tracking-wider mb-2">AKTIVITAS</h3>
-                                <div className="flex-1 overflow-y-auto text-xs space-y-1.5 pr-1">
-                                    {state.logs && state.logs.map((l, i) => (
-                                        <div key={i} className="text-slate-300 border-b border-slate-800/60 pb-1 font-medium">{l}</div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
+                    <div class="bottom-4">
+                        <p class="font-typewriter text-xs text-slate-400">Curated & Crafted by Deril</p>
                     </div>
-
-                    {/* STRICT POPUP MODALS - ONLY APPEARS AFTER WALKING STOPS */}
-                    {showCardModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-                            <div className={`max-w-sm w-full p-6 rounded-3xl border shadow-2xl text-center animate-card-pop ${state.turn.activeCard.cardType === 'CHANCE' ? 'bg-gradient-to-b from-amber-950 to-slate-900 border-amber-500/40 text-amber-100' : 'bg-gradient-to-b from-slate-900 to-indigo-950 border-indigo-500/40 text-indigo-100'}`}>
-                                <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-lg ${state.turn.activeCard.cardType === 'CHANCE' ? 'bg-amber-500 text-slate-950' : 'bg-indigo-500 text-white'}`}>
-                                    <i className={`fas ${state.turn.activeCard.cardType === 'CHANCE' ? 'fa-clover' : 'fa-triangle-exclamation'}`}></i>
-                                </div>
-                                <span className="text-xs font-black uppercase tracking-widest opacity-75">
-                                    {state.turn.activeCard.cardType === 'CHANCE' ? 'KARTU NASIB' : 'KARTU REALITA'}
-                                </span>
-                                <h3 className="text-xl font-black mt-2 mb-3 leading-tight">{state.turn.activeCard.text}</h3>
-                                {state.turn.activeCard.amount && (
-                                    <div className={`text-2xl font-black mb-6 ${state.turn.activeCard.amount > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                        {state.turn.activeCard.amount > 0 ? `+${formatRp(state.turn.activeCard.amount)}` : formatRp(state.turn.activeCard.amount)}
-                                    </div>
-                                )}
-                                {myTurn && (
-                                    <button 
-                                        onClick={() => sendAction('CLOSE_CARD_POPUP')}
-                                        className="w-full py-3.5 bg-white text-slate-950 font-black rounded-xl shadow-lg hover:bg-slate-200 transition active:scale-95"
-                                    >
-                                        LANJUTKAN
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {showPropertyModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-                            <div className="max-w-sm w-full bg-slate-900 rounded-3xl border border-slate-700 shadow-2xl p-6 text-center animate-card-pop">
-                                {activeTile?.group && (
-                                    <div className="h-4 rounded-full mb-4" style={{ backgroundColor: GROUPS[activeTile.group].color }}></div>
-                                )}
-                                <h3 className="text-2xl font-black text-white mb-1">{activeTile?.name}</h3>
-                                <p className="text-slate-400 text-sm font-semibold mb-4">Harga: {formatRp(activeTile?.price)}</p>
-
-                                {!canAffordProperty && (
-                                    <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold p-3 rounded-xl mb-4">
-                                        <i className="fas fa-exclamation-circle mr-1"></i> Saldo tidak cukup.
-                                    </div>
-                                )}
-
-                                <div className="flex gap-3">
-                                    <button 
-                                        onClick={() => sendAction('BUY_PROPERTY')}
-                                        disabled={!canAffordProperty}
-                                        className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black rounded-xl shadow-lg transition active:scale-95"
-                                    >
-                                        BELI
-                                    </button>
-                                    <button 
-                                        onClick={() => sendAction('SKIP_BUY')}
-                                        className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black rounded-xl border border-slate-700 transition active:scale-95"
-                                    >
-                                        LEWAT
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showJailModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-                            <div className="max-w-sm w-full bg-slate-900 rounded-3xl border border-slate-700 shadow-2xl p-6 text-center animate-card-pop">
-                                <div className="w-16 h-16 bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3">
-                                    <i className="fas fa-lock"></i>
-                                </div>
-                                <h3 className="text-xl font-black text-white mb-1">KAMU DI PENJARA</h3>
-                                <p className="text-slate-400 text-xs font-semibold mb-6">Percobaan tersisa: {3 - (myPlayer.jailAttempts || 0)}</p>
-
-                                <div className="space-y-2.5">
-                                    <button 
-                                        onClick={handleRollClick}
-                                        disabled={rolling}
-                                        className="w-full py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black rounded-xl shadow-md transition"
-                                    >
-                                        LEMPAR DOUBLE
-                                    </button>
-                                    <button 
-                                        onClick={() => sendAction('PAY_JAIL')}
-                                        disabled={myPlayer.money < 500000}
-                                        className="w-full py-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 font-black rounded-xl border border-slate-700 transition"
-                                    >
-                                        BAYAR Rp500.000
-                                    </button>
-                                    {myPlayer.cards && myPlayer.cards.includes('ORANG_DALAM') && (
-                                        <button 
-                                            onClick={() => sendAction('USE_CARD')}
-                                            className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-md transition"
-                                        >
-                                            PAKAI ORANG DALAM
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                 </div>
-            );
-        };
+            </div>
 
-        const App = () => {
-            const [playerId] = useLocalStorage('wni_player_id', generateId());
-            const [roomCode, setRoomCode] = useState(null);
-            const [room, setRoom] = useState(null);
-            const [players, setPlayers] = useState([]);
-            
-            const subs = useRef([]);
+            <!-- PAGE 2: Inside Cover Note -->
+            <div class="page" data-density="hard">
+                <div class="page-content bg-kraft">
+                    <div class="washi-tape washi-blue w-28 top-4 left-6 transform -rotate-6"></div>
+                    <div class="flex justify-between items-center border-b-2 border-amber-900/20 pb-2">
+                        <span class="font-typewriter text-xs text-amber-900/60">CONFIDENTIAL / FOR AZURA ONLY</span>
+                        <span class="stamp-mark">VOL. 2026</span>
+                    </div>
 
-            useEffect(() => {
-                if (!roomCode) return;
+                    <div class="my-auto bg-amber-50/80 p-5 rounded-lg border border-amber-900/10 shadow-sm">
+                        <h3 class="font-pop text-lg text-amber-900 font-bold mb-2">Quick Note Before Opening:</h3>
+                        <p class="font-handwriting text-xl text-amber-950 leading-relaxed">
+                            Buku ini dibuat khusus buat lo. Isinya bukan cuma ucapan biasa, tapi rangkuman tentang seberapa spesialnya seorang Azura Bell di mata gue. Read it slowly, enjoy every page!
+                        </p>
+                    </div>
 
-                const fetchInitial = async () => {
-                    const { data: rm } = await supabase.from('wni_rooms').select('*').eq('code', roomCode).single();
-                    if (rm) setRoom(rm);
-                    const { data: pls } = await supabase.from('wni_players').select('*').eq('room_id', rm.id);
-                    if (pls) setPlayers(pls);
-                };
-                fetchInitial();
+                    <div class="flex justify-between items-end">
+                        <div class="sticker-badge bg-amber-800 text-amber-100 font-typewriter text-xs">HANDLE WITH CARE</div>
+                        <p class="font-handwriting text-lg text-amber-900">- Deril</p>
+                    </div>
+                </div>
+            </div>
 
-                const roomSub = supabase.channel(`room_${roomCode}`)
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'wni_rooms', filter: `code=eq.${roomCode}` }, payload => {
-                        setRoom(payload.new);
-                    }).subscribe();
-                
-                const playersSub = supabase.channel(`players_${roomCode}`)
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'wni_players' }, payload => {
-                        setPlayers(prev => {
-                            const exists = prev.find(p => p.id === payload.new.id);
-                            if (payload.eventType === 'DELETE') return prev.filter(p => p.id !== payload.old.id);
-                            if (exists) return prev.map(p => p.id === payload.new.id ? payload.new : p);
-                            return [...prev, payload.new];
-                        });
-                    }).subscribe();
+            <!-- PAGE 3: The Star of the Day -->
+            <div class="page">
+                <div class="page-content bg-gingham-pink">
+                    <div class="washi-tape washi-pink w-32 -top-1 left-12 transform rotate-3"></div>
+                    
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="sticker-badge bg-rose-500 text-white">CHAPTER 01</span>
+                        <h2 class="font-pop text-2xl text-rose-800 font-semibold">The Birthday Girl</h2>
+                    </div>
 
-                subs.current = [roomSub, playersSub];
-
-                return () => {
-                    subs.current.forEach(s => supabase.removeChannel(s));
-                };
-            }, [roomCode]);
-
-            // Host Engine
-            useEffect(() => {
-                if (!room || room.status !== 'playing' || room.host_id !== playerId) return;
-
-                const actionsSub = supabase.channel(`actions_${room.id}`)
-                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'wni_actions', filter: `room_id=eq.${room.id}` }, async payload => {
-                        const action = payload.new;
-                        
-                        let logQueue = [];
-                        const logMsg = (msg) => logQueue.push(`[${new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}] ${msg}`);
-                        
-                        const newState = processAction(room.state, action, logMsg);
-                        newState.logs = [...logQueue, ...(newState.logs || [])].slice(0, 50);
-
-                        await supabase.from('wni_rooms').update({ state: newState }).eq('id', room.id);
-                        
-                        if (newState.status === 'game_over') {
-                            await supabase.from('wni_rooms').update({ status: 'finished' }).eq('id', room.id);
-                        }
-                    }).subscribe();
-
-                return () => supabase.removeChannel(actionsSub);
-            }, [room, playerId]);
-
-            const handleCreateRoom = async (name) => {
-                const code = Math.random().toString(36).substring(2, 6).toUpperCase();
-                const { data: newRoom, error: roomErr } = await supabase.from('wni_rooms').insert([
-                    { code, host_id: playerId }
-                ]).select().single();
-
-                if (roomErr) return alert('Gagal membuat room. Cek koneksi.');
-
-                await supabase.from('wni_players').insert([
-                    { id: playerId, room_id: newRoom.id, name, color: COLORS[0], is_ready: true }
-                ]);
-                
-                setRoomCode(code);
-            };
-
-            const handleJoinRoom = async (code, name) => {
-                const { data: rm, error } = await supabase.from('wni_rooms').select('*').eq('code', code).single();
-                if (error || !rm) return alert('Room tidak ditemukan!');
-                if (rm.status !== 'waiting') return alert('Game sudah dimulai!');
-
-                const { data: existingPlayers } = await supabase.from('wni_players').select('*').eq('room_id', rm.id);
-                if (existingPlayers.length >= 8) return alert('Room penuh!');
-                
-                const existingMe = existingPlayers.find(p => p.id === playerId);
-                if (!existingMe) {
-                    await supabase.from('wni_players').insert([
-                        { id: playerId, room_id: rm.id, name, color: COLORS[existingPlayers.length % COLORS.length] }
-                    ]);
-                }
-                setRoomCode(code);
-            };
-
-            const handleReady = async (isReady) => {
-                setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, is_ready: isReady } : p));
-                await supabase.from('wni_players').update({ is_ready: isReady }).eq('id', playerId);
-            };
-
-            const handleStartGame = async () => {
-                const turnOrder = players.map(p => p.id).sort(() => Math.random() - 0.5);
-                
-                const initialState = {
-                    code: roomCode,
-                    status: 'playing',
-                    turnOrder,
-                    turn: {
-                        currentIndex: 0,
-                        currentPlayerId: turnOrder[0],
-                        phase: 'WAITING_FOR_ROLL',
-                        doublesCount: 0,
-                        lastDice: null,
-                        targetPosition: 0
-                    },
-                    players: {},
-                    properties: {},
-                    logs: ['Game dimulai!']
-                };
-
-                players.forEach(p => {
-                    initialState.players[p.id] = {
-                        id: p.id,
-                        name: p.name,
-                        color: p.color,
-                        money: 15000000,
-                        position: 0,
-                        jailStatus: false,
-                        jailAttempts: 0,
-                        bankrupt: false,
-                        cards: []
-                    };
-                });
-
-                BOARD_TILES.forEach(t => {
-                    if (['PROPERTY', 'TRANSPORT'].includes(t.type)) {
-                        initialState.properties[t.id] = { ownerId: null, level: 0, mortgaged: false };
-                    }
-                });
-
-                await supabase.from('wni_rooms').update({ 
-                    status: 'playing', 
-                    state: initialState 
-                }).eq('id', room.id);
-            };
-
-            const sendAction = async (type, payload = {}) => {
-                await supabase.from('wni_actions').insert([{
-                    room_id: room.id,
-                    player_id: playerId,
-                    type,
-                    payload
-                }]);
-            };
-
-            const handleLeave = () => {
-                supabase.from('wni_players').delete().eq('id', playerId).then(() => {
-                    setRoomCode(null);
-                    setRoom(null);
-                    setPlayers([]);
-                });
-            };
-
-            if (!roomCode || !room) {
-                return <Home onJoin={handleJoinRoom} onCreate={handleCreateRoom} />;
-            }
-
-            const me = players.find(p => p.id === playerId);
-            if (!me) return <div className="p-8 text-center text-slate-400">Menghubungkan ke room...</div>;
-
-            if (room.status === 'waiting') {
-                return <Lobby room={room} players={players} me={me} onReady={handleReady} onStart={handleStartGame} onLeave={handleLeave} />;
-            }
-            
-            if (room.status === 'finished') {
-                return (
-                    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950">
-                        <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl text-center shadow-2xl max-w-md w-full animate-card-pop">
-                            <div className="w-20 h-20 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
-                                <i className="fas fa-trophy"></i>
+                    <div class="grid grid-cols-12 gap-3 items-center my-auto">
+                        <div class="col-span-6">
+                            <div class="polaroid-card transform -rotate-3">
+                                <div class="polaroid-frame h-36 bg-rose-100/60">
+                                    <svg class="w-12 h-12 text-rose-400 mb-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
+                                    <span class="font-cute text-sm text-rose-700 font-bold">[ Portrait of Azura ]</span>
+                                </div>
+                                <p class="font-handwriting text-xs text-slate-600 mt-2">The one and only Azura Bell ✨</p>
                             </div>
-                            <h1 className="text-3xl font-black text-white mb-2">GAME OVER</h1>
-                            <p className="text-lg mb-6 text-slate-300">Pemenang: <span className="font-extrabold text-amber-400">{room.state.players[room.state.winner]?.name}</span></p>
-                            <button onClick={handleLeave} className="w-full bg-slate-800 hover:bg-slate-700 text-white py-4 rounded-xl font-black transition">KEMBALI KE MENU</button>
+                        </div>
+
+                        <div class="col-span-6 bg-white/80 p-3 rounded-lg border border-rose-200 shadow-sm">
+                            <p class="font-handwriting text-lg text-slate-800 leading-snug">
+                                Hari ini panggungnya penuh milik lo. Orang yang selalu bawa energi positif dan aura cerah ke mana pun lo jalan.
+                            </p>
                         </div>
                     </div>
-                );
-            }
 
-            return <GameBoard state={room.state} me={me} sendAction={sendAction} />;
-        };
+                    <div class="flex justify-between items-center text-xs font-handwriting text-rose-700">
+                        <span>#AzuraDay</span>
+                        <span class="swipe-hint">Swipe &rarr;</span>
+                    </div>
+                </div>
+            </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+            <!-- PAGE 4: Her Bright Smile -->
+            <div class="page">
+                <div class="page-content bg-dots-yellow">
+                    <div class="washi-tape washi-yellow w-28 top-3 right-6 transform rotate-6"></div>
+
+                    <h2 class="font-marker text-3xl text-amber-800 font-bold">That Infectious Smile</h2>
+
+                    <div class="flex flex-col gap-3 my-auto">
+                        <div class="bg-amber-100/90 p-4 rounded-xl border border-amber-300 shadow-sm">
+                            <p class="font-handwriting text-xl text-amber-950 leading-relaxed">
+                                Salah satu hal paling gampang di-notice dari lo adalah senyum lo. Kalau lo udah ketawa lepas, suasananya langsung ikutan santai.
+                            </p>
+                        </div>
+
+                        <div class="sticky-note bg-amber-200 text-amber-900 transform rotate-1">
+                            <p class="font-cute text-lg">
+                                "Gue serius, tawa lo tuh nular banget. Even on a stressful day, seeing you laugh naturally fixes the mood."
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <span class="sticker-badge bg-amber-400 text-amber-950">100% GENUINE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 5: Eyes & Expressiveness -->
+            <div class="page">
+                <div class="page-content bg-stripes-lavender">
+                    <div class="washi-tape washi-blue w-32 top-2 left-1/3 transform -rotate-2"></div>
+
+                    <div class="flex justify-between items-center">
+                        <h2 class="font-pop text-2xl text-purple-900">Expressive Mind</h2>
+                        <span class="stamp-mark border-purple-400 text-purple-600">UNFILTERED</span>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-3 my-auto items-center">
+                        <div class="col-span-7 bg-white/90 p-3 rounded-lg border border-purple-200 shadow-sm">
+                            <p class="font-friendly text-lg text-purple-950 leading-snug">
+                                Lo tuh tipe orang yang nggak pandai ngumpetin ekspresi. Kelihatan banget di mata lo kalau lagi seneng, bingung, atau lagi excited nyeritain sesuatu.
+                            </p>
+                        </div>
+
+                        <div class="col-span-5">
+                            <div class="polaroid-card transform rotate-3">
+                                <div class="polaroid-frame h-32 bg-purple-100">
+                                    <svg class="w-10 h-10 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                </div>
+                                <p class="font-cute text-xs text-purple-800 mt-1">Expressive facial reactions!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="font-handwriting text-base text-purple-800 italic">"And honestly? That transparent side of you is so refreshing."</p>
+                </div>
+            </div>
+
+            <!-- PAGE 6: Determination & Work Ethic -->
+            <div class="page">
+                <div class="page-content bg-mint-grid">
+                    <div class="washi-tape washi-yellow w-28 top-4 right-4 transform rotate-12"></div>
+
+                    <span class="sticker-badge bg-emerald-600 text-white w-max">CHARACTER TRAIT</span>
+                    <h2 class="font-marker text-3xl text-emerald-900 mt-1">Passionate & Driven</h2>
+
+                    <div class="bg-white/90 p-4 rounded-xl border border-emerald-200 my-auto shadow-sm">
+                        <p class="font-handwriting text-xl text-emerald-950 leading-relaxed">
+                            Kalau lo udah punya goals atau fokus ke satu tugas, dedikasi lo luar biasa. Lo bakal usahain semaksimal mungkin sampai tuntas, walau kadang capek sendiri.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center justify-between border-t border-emerald-300/60 pt-2">
+                        <span class="font-typewriter text-xs text-emerald-800">STATUS: HARDWORKING QUEEN</span>
+                        <span class="font-cute text-lg text-emerald-700 font-bold">Salute to you! 🙌</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 7: Her Quirky Randomness -->
+            <div class="page">
+                <div class="page-content bg-vintage-parchment">
+                    <div class="washi-tape washi-pink w-32 top-3 left-6 transform -rotate-6"></div>
+
+                    <h2 class="font-pop text-2xl text-amber-900">Cute Little Quirks</h2>
+
+                    <div class="grid grid-cols-12 gap-3 my-auto">
+                        <div class="col-span-5">
+                            <div class="polaroid-card transform -rotate-4">
+                                <div class="polaroid-frame h-32 bg-amber-100">
+                                    <svg class="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                                <p class="font-cute text-xs text-amber-900 mt-1">Random thoughts overload</p>
+                            </div>
+                        </div>
+
+                        <div class="col-span-7 flex flex-col justify-center">
+                            <div class="bg-amber-100/80 p-3 rounded-lg border border-amber-300">
+                                <p class="font-friendly text-lg text-amber-950 leading-tight">
+                                    Dari topik obrolan out-of-the-box sampai kebiasaan-kebiasaan kecil lo yang unik. Lo selalu punya cara bikin hal biasa jadi menghibur.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-200/60 p-2 rounded text-center">
+                        <p class="font-handwriting text-base text-amber-900">"Never change your funny, random side!"</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 8: Taste in Music & Vibes -->
+            <div class="page">
+                <div class="page-content bg-grid-blue">
+                    <div class="washi-tape washi-blue w-28 top-2 right-8 transform rotate-3"></div>
+
+                    <div class="flex justify-between items-center">
+                        <h2 class="font-marker text-3xl text-slate-800">Music & Aesthetic</h2>
+                        <span class="sticker-badge bg-sky-500 text-white">VIBE CHECK</span>
+                    </div>
+
+                    <div class="my-auto space-y-3">
+                        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 font-bold shrink-0">
+                                🎵
+                            </div>
+                            <p class="font-friendly text-base text-slate-700 leading-snug">
+                                Taste musik lo selalu punya vibe tersendiri. Lagu-lagu pilihan lo enak banget didengerin saat santai atau perjalanan.
+                            </p>
+                        </div>
+
+                        <div class="sticky-note bg-sky-100 text-slate-800 transform rotate-1">
+                            <p class="font-handwriting text-lg">
+                                "Playlist buatan lo atau rekomendasi lagu dari lo tuh jarang banget meleset."
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end font-typewriter text-xs text-slate-500">
+                        TRACK: AZURA'S FAVORITE SOUNDS
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 9: Pure Heart & Empathy -->
+            <div class="page">
+                <div class="page-content bg-gingham-pink">
+                    <div class="washi-tape washi-pink w-32 top-4 left-8 transform -rotate-12"></div>
+
+                    <h2 class="font-pop text-2xl text-rose-900">Empathetic & Caring</h2>
+
+                    <div class="my-auto bg-white/90 p-4 rounded-xl border border-rose-200 shadow-sm space-y-2">
+                        <p class="font-handwriting text-xl text-rose-950 leading-relaxed">
+                            Di balik semua keceriaan lo, lo punya hati yang peka banget. Cara lo merhatiin orang-orang terdekat lo nunjukin seberapa tulusnya lo sebagai teman.
+                        </p>
+                    </div>
+
+                    <div class="sticky-note bg-rose-200 text-rose-900 transform -rotate-1">
+                        <p class="font-cute text-xl">
+                            "You care deeply, even about the small details others easily miss."
+                        </p>
+                    </div>
+
+                    <div class="text-right">
+                        <span class="stamp-mark border-rose-500 text-rose-600">PURE HEART</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 10: Her Stubborn Cute Side -->
+            <div class="page">
+                <div class="page-content bg-kraft">
+                    <div class="washi-tape washi-yellow w-32 top-3 right-6 transform rotate-6"></div>
+
+                    <div class="flex justify-between items-center">
+                        <h2 class="font-marker text-3xl text-amber-950">The "Batu" Moments</h2>
+                        <span class="sticker-badge bg-amber-900 text-amber-100">FUN FACT</span>
+                    </div>
+
+                    <div class="my-auto space-y-3">
+                        <div class="bg-amber-100/90 p-3 rounded-lg border border-amber-300">
+                            <p class="font-friendly text-lg text-amber-950 leading-snug">
+                                Ya... kita semua tahu lo kadang agak keras kepala kalau udah punya pendirian sendiri. Tapi anehnya, itu malah bikin karakter lo makin kuat.
+                            </p>
+                        </div>
+
+                        <div class="polaroid-card transform rotate-2 max-w-xs mx-auto">
+                            <div class="polaroid-frame h-24 bg-amber-200/50">
+                                <span class="font-cute text-base text-amber-900 font-bold">"Nggak mau, tetep mau begini!"</span>
+                            </div>
+                            <p class="font-typewriter text-xs text-amber-800 mt-1">Azura when she won't give up 😅</p>
+                        </div>
+                    </div>
+
+                    <p class="font-handwriting text-base text-amber-900 text-center">"Tapi justru sikap teguh itu yang bikin lo tangguh."</p>
+                </div>
+            </div>
+
+            <!-- PAGE 11: Great Conversationalist -->
+            <div class="page">
+                <div class="page-content bg-stripes-lavender">
+                    <div class="washi-tape washi-blue w-28 top-3 left-10 transform -rotate-3"></div>
+
+                    <h2 class="font-pop text-2xl text-purple-900">Unfiltered Talks</h2>
+
+                    <div class="my-auto space-y-3">
+                        <div class="bg-white/90 p-4 rounded-xl border border-purple-200 shadow-sm">
+                            <p class="font-handwriting text-xl text-purple-950 leading-relaxed">
+                                Ngobrol sama lo tuh selalu seru. Dari pembahasan serius tentang masa depan, cerita harian yang sepele, sampai diskusi penuh tawa.
+                            </p>
+                        </div>
+
+                        <div class="sticky-note bg-purple-200 text-purple-950 transform -rotate-1">
+                            <p class="font-cute text-xl">
+                                "Time always passes by so fast whenever we're talking."
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center text-xs font-typewriter text-purple-700">
+                        <span>VOICE NOTE: 03:42</span>
+                        <span>BEST CHAT PARTNER</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 12: Style & Elegance -->
+            <div class="page">
+                <div class="page-content bg-dots-yellow">
+                    <div class="washi-tape washi-pink w-32 top-2 right-10 transform rotate-12"></div>
+
+                    <h2 class="font-marker text-3xl text-amber-900">Effortless Style</h2>
+
+                    <div class="grid grid-cols-12 gap-3 my-auto items-center">
+                        <div class="col-span-6">
+                            <div class="polaroid-card transform -rotate-3">
+                                <div class="polaroid-frame h-36 bg-amber-100">
+                                    <svg class="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                                    <span class="font-cute text-xs text-amber-800 mt-1">Aesthetic outfit sense</span>
+                                </div>
+                                <p class="font-typewriter text-xs text-slate-600 mt-1">Always looking good</p>
+                            </div>
+                        </div>
+
+                        <div class="col-span-6 bg-white/90 p-3 rounded-lg border border-amber-300">
+                            <p class="font-friendly text-lg text-amber-950 leading-snug">
+                                Lo selalu tau selera berpakaian dan penampilan yang cocok buat lo. Simple, neat, and effortlessly stylish in your own way.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-right">
+                        <span class="sticker-badge bg-amber-500 text-amber-950">10/10 AESTHETIC</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 13: Coffee / Drink Fuel -->
+            <div class="page">
+                <div class="page-content bg-mint-grid">
+                    <div class="washi-tape washi-yellow w-28 top-3 left-6 transform -rotate-6"></div>
+
+                    <div class="flex justify-between items-center">
+                        <h2 class="font-pop text-2xl text-emerald-900">Daily Fuel</h2>
+                        <span class="stamp-mark border-emerald-500 text-emerald-700">CAFFEINE / SWEET</span>
+                    </div>
+
+                    <div class="my-auto space-y-3">
+                        <div class="bg-white/90 p-4 rounded-xl border border-emerald-200 shadow-sm">
+                            <p class="font-handwriting text-xl text-emerald-950 leading-relaxed">
+                                ritual minum kopi atau matcha favorit lo yang nggak boleh terlewat. Suasana hati lo bisa langsung naik instan begitu dapet minuman kesukaan lo.
+                            </p>
+                        </div>
+
+                        <div class="sticky-note bg-emerald-200 text-emerald-950 transform rotate-2">
+                            <p class="font-cute text-xl">
+                                "A happy Azura = Azura with her favorite sweet drink in hand."
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center text-xs font-typewriter text-emerald-800">
+                        <span>ENERGY LEVEL: 100%</span>
+                        <span>FAVORITE TREAT</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 14: Overthinking Mind -->
+            <div class="page">
+                <div class="page-content bg-vintage-parchment">
+                    <div class="washi-tape washi-blue w-32 top-2 right-8 transform rotate-3"></div>
+
+                    <h2 class="font-marker text-3xl text-amber-900">The Overthinking Mind</h2>
+
+                    <div class="my-auto space-y-3">
+                        <div class="bg-amber-100/90 p-4 rounded-xl border border-amber-300">
+                            <p class="font-handwriting text-xl text-amber-950 leading-relaxed">
+                                Gue paham lo suka terlalu banyak mikir hal-hal kecil yang belum tentu kejadian. Kadang bikin lo pusing sendiri.
+                            </p>
+                        </div>
+
+                        <div class="bg-white/80 p-3 rounded-lg border border-amber-300">
+                            <p class="font-friendly text-lg text-amber-900">
+                                Tapi ketahuilah, kapabilitas lo tuh jauh lebih besar dari keraguan yang ada di kepala lo.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <span class="sticker-badge bg-amber-800 text-amber-100">BREATHE & TAKE IT EASY</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 15: Resiliency & Grace -->
+            <div class="page">
+                <div class="page-content bg-gingham-pink">
+                    <div class="washi-tape washi-pink w-28 top-3 left-1/4 transform -rotate-2"></div>
+
+                    <span class="sticker-badge bg-rose-600 text-white w-max">RESILIENCE</span>
+                    <h2 class="font-pop text-2xl text-rose-900 mt-1">Bouncing Back Stronger</h2>
+
+                    <div class="my-auto space-y-3">
+                        <div class="bg-white/90 p-4 rounded-xl border border-rose-200 shadow-sm">
+                            <p class="font-handwriting text-xl text-rose-950 leading-relaxed">
+                                Setiap kali nemu kendala atau hari yang berat, lo selalu nemuin cara buat bangkit lagi. Lo jauh lebih kuat dari yang lo kira.
+                            </p>
+                        </div>
+
+                        <div class="sticky-note bg-rose-200 text-rose-950 transform rotate-1">
+                            <p class="font-cute text-xl">
+                                "I admire how you handle tough days with grace and keep moving forward."
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center text-xs font-typewriter text-rose-800">
+                        <span>ALWAYS GROWING</span>
+                        <span>PROUD MOMENT</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 16: Safe & Warm Presence -->
+            <div class="page">
+                <div class="page-content bg-grid-blue">
+                    <div class="washi-tape washi-yellow w-32 top-3 right-6 transform rotate-6"></div>
+
+                    <h2 class="font-marker text-3xl text-slate-800">Warm Comfort</h2>
+
+                    <div class="my-auto space-y-3">
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                            <p class="font-handwriting text-xl text-slate-800 leading-relaxed">
+                                Kehadiran lo tuh selalu ngasih rasa nyaman. Lo adalah sosok yang bikin lingkungan di sekitar lo ngerasa aman dan diterima apa adanya.
+                            </p>
+                        </div>
+
+                        <div class="bg-sky-100/80 p-3 rounded-lg border border-sky-200">
+                            <p class="font-friendly text-lg text-sky-950">
+                                You bring a sense of peace just by being yourself in the room.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-right">
+                        <span class="stamp-mark border-sky-500 text-sky-600">SAFE HAVEN</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 17: Highlights & Memories -->
+            <div class="page">
+                <div class="page-content bg-kraft">
+                    <div class="washi-tape washi-blue w-32 top-2 left-6 transform -rotate-6"></div>
+
+                    <h2 class="font-pop text-2xl text-amber-950">Memory Collage</h2>
+
+                    <div class="grid grid-cols-12 gap-2 my-auto">
+                        <div class="col-span-6">
+                            <div class="polaroid-card transform -rotate-3">
+                                <div class="polaroid-frame h-28 bg-amber-100">
+                                    <span class="font-cute text-xs text-amber-900">[ Random Laughs ]</span>
+                                </div>
+                                <p class="font-typewriter text-xs text-slate-600 mt-1">Unplanned fun</p>
+                            </div>
+                        </div>
+
+                        <div class="col-span-6">
+                            <div class="polaroid-card transform rotate-3">
+                                <div class="polaroid-frame h-28 bg-amber-200">
+                                    <span class="font-cute text-xs text-amber-900">[ Deep Talks ]</span>
+                                </div>
+                                <p class="font-typewriter text-xs text-slate-600 mt-1">Late hours</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="font-handwriting text-base text-amber-900 text-center">"Every single memory with you is worth keeping."</p>
+                </div>
+            </div>
+
+            <!-- PAGE 18: One of a Kind -->
+            <div class="page">
+                <div class="page-content bg-stripes-lavender">
+                    <div class="washi-tape washi-pink w-28 top-3 right-6 transform rotate-6"></div>
+
+                    <h2 class="font-marker text-3xl text-purple-950">Truly One of a Kind</h2>
+
+                    <div class="my-auto space-y-3">
+                        <div class="bg-white/90 p-4 rounded-xl border border-purple-200 shadow-sm">
+                            <p class="font-handwriting text-xl text-purple-950 leading-relaxed">
+                                Nggak ada orang yang persis kayak Azura. Kombinasi antara kebaikan hati lo, pemikiran unik lo, dan keceriaan lo tuh langka banget.
+                            </p>
+                        </div>
+
+                        <div class="sticky-note bg-purple-200 text-purple-950 transform -rotate-1">
+                            <p class="font-cute text-xl">
+                                "Never shrink yourself to fit in. You are remarkable just as you are."
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <span class="sticker-badge bg-purple-600 text-white">LIMITED EDITION</span>
+                        <span class="font-typewriter text-xs text-purple-800">1 OF 1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 19: Proud Supporter (Deril's Perspective) -->
+            <div class="page">
+                <div class="page-content bg-dots-yellow">
+                    <div class="washi-tape washi-yellow w-32 top-3 left-8 transform -rotate-6"></div>
+
+                    <h2 class="font-pop text-2xl text-amber-900">Always Cheering</h2>
+
+                    <div class="my-auto space-y-3">
+                        <div class="bg-white/90 p-4 rounded-xl border border-amber-300 shadow-sm">
+                            <p class="font-handwriting text-xl text-amber-950 leading-relaxed">
+                                Apapun impian atau project yang lagi lo kejar sekarang, ingett kalau gue bakal selalu jadi salah satu orang pertama yang dukung lo dari belakang.
+                            </p>
+                        </div>
+
+                        <div class="bg-amber-100/80 p-3 rounded-lg border border-amber-300">
+                            <p class="font-friendly text-lg text-amber-900">
+                                You have so much potential waiting to unfold this year.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-right">
+                        <span class="stamp-mark border-amber-600 text-amber-800">BIGGEST FAN</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 20: Future Potential -->
+            <div class="page">
+                <div class="page-content bg-mint-grid">
+                    <div class="washi-tape washi-blue w-28 top-3 right-6 transform rotate-3"></div>
+
+                    <span class="sticker-badge bg-emerald-600 text-white w-max">NEW AGE, NEW GOALS</span>
+                    <h2 class="font-marker text-3xl text-emerald-950 mt-1">Bright Future Ahead</h2>
+
+                    <div class="my-auto space-y-3">
+                        <div class="bg-white/90 p-4 rounded-xl border border-emerald-200 shadow-sm">
+                            <p class="font-handwriting text-xl text-emerald-950 leading-relaxed">
+                                Tahun baru dalam hidup lo ini bakal ngebuka banyak pintu kesempatan baru. Percaya sama proses dan kemampuan diri lo sendiri.
+                            </p>
+                        </div>
+
+                        <div class="sticky-note bg-emerald-200 text-emerald-950 transform rotate-1">
+                            <p class="font-cute text-xl">
+                                "Great things are coming your way, Azura."
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center text-xs font-typewriter text-emerald-800">
+                        <span>NEXT CHAPTER: UNLOCKED</span>
+                        <span>GO AZURA!</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 21: Birthday Wishes Part 1 -->
+            <div class="page">
+                <div class="page-content bg-vintage-parchment">
+                    <div class="washi-tape washi-pink w-32 top-3 left-10 transform -rotate-6"></div>
+
+                    <h2 class="font-pop text-2xl text-amber-950">Wishes For You</h2>
+
+                    <div class="my-auto space-y-3">
+                        <div class="bg-amber-100/90 p-4 rounded-xl border border-amber-300">
+                            <p class="font-handwriting text-xl text-amber-950 leading-relaxed">
+                                Doa gue simpel buat lo: Semoga lo selalu diberikan kesehatan, ketenangan pikiran, dan kebahagiaan yang tulus setiap harinya.
+                            </p>
+                        </div>
+
+                        <div class="bg-white/80 p-3 rounded-lg border border-amber-300">
+                            <p class="font-friendly text-lg text-amber-900">
+                                Semoga beban-beban kecil yang sering lo pikirin bisa pelan-pelan berkurang.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <span class="sticker-badge bg-amber-600 text-amber-50">GENUINE WISHES</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 22: Birthday Wishes Part 2 -->
+            <div class="page">
+                <div class="page-content bg-gingham-pink">
+                    <div class="washi-tape washi-yellow w-30 top-2 right-8 transform rotate-6"></div>
+
+                    <h2 class="font-marker text-3xl text-rose-950">More Happiness</h2>
+
+                    <div class="my-auto space-y-3">
+                        <div class="bg-white/90 p-4 rounded-xl border border-rose-200 shadow-sm">
+                            <p class="font-handwriting text-xl text-rose-950 leading-relaxed">
+                                Semoga lingkungan lo selalu dikelilingi orang-orang yang sayang dan menghargai keberadaan lo, persis seperti lo menghargai mereka.
+                            </p>
+                        </div>
+
+                        <div class="sticky-note bg-rose-200 text-rose-950 transform -rotate-1">
+                            <p class="font-cute text-xl">
+                                "You deserve all the sweetness this world has to offer."
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-right">
+                        <span class="stamp-mark border-rose-500 text-rose-700">DESERVE THE BEST</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 23: Virtual Celebration Toast -->
+            <div class="page">
+                <div class="page-content bg-grid-blue">
+                    <div class="washi-tape washi-blue w-32 top-3 left-6 transform -rotate-3"></div>
+
+                    <div class="flex justify-between items-center">
+                        <h2 class="font-pop text-2xl text-slate-800">Time To Celebrate!</h2>
+                        <span class="sticker-badge bg-amber-500 text-slate-950">PARTY TIME</span>
+                    </div>
+
+                    <div class="my-auto py-2 text-center space-y-3">
+                        <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto border-2 border-dashed border-amber-400">
+                            <span class="text-3xl">🎂</span>
+                        </div>
+                        <p class="font-handwriting text-2xl text-slate-800">
+                            Happy Birthday, Azura Bell! 🎉
+                        </p>
+                        <p class="font-friendly text-lg text-slate-600 max-w-xs mx-auto">
+                            Jangan lupa luangin waktu buat sejenak nikmatin hari ini. Beli makanan atau minuman favorit lo!
+                        </p>
+                    </div>
+
+                    <div class="flex justify-between items-center font-typewriter text-xs text-slate-500">
+                        <span>MAKE A WISH 🕯️</span>
+                        <span>BLOW THE CANDLES</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 24: Final Heartfelt Note from Deril -->
+            <div class="page">
+                <div class="page-content bg-kraft">
+                    <div class="washi-tape washi-pink w-32 top-3 right-6 transform rotate-6"></div>
+
+                    <h2 class="font-marker text-3xl text-amber-950">Final Words</h2>
+
+                    <div class="my-auto bg-amber-50/90 p-4 rounded-xl border border-amber-300 shadow-sm space-y-2">
+                        <p class="font-handwriting text-xl text-amber-950 leading-relaxed">
+                            Makasih udah jadi sosok Azura yang luar biasa selama ini. Tetep jadi diri lo sendiri yang ceria, unik, dan penuh semangat.
+                        </p>
+                        <p class="font-handwriting text-xl text-amber-900 font-bold mt-2">
+                            Happy Birthday once again, Azura. Have an awesome year ahead!
+                        </p>
+                    </div>
+
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="font-typewriter text-xs text-amber-800">WARMEST REGARDS,</p>
+                            <p class="font-marker text-2xl text-amber-950 mt-1">Deril.</p>
+                        </div>
+                        <span class="stamp-mark border-amber-800 text-amber-900">SIGNED & SEALED</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 25: Inside Back Cover -->
+            <div class="page" data-density="hard">
+                <div class="page-content bg-kraft">
+                    <div class="washi-tape washi-yellow w-28 bottom-6 right-6 transform -rotate-12"></div>
+                    
+                    <div class="my-auto text-center space-y-2">
+                        <span class="sticker-badge bg-amber-900 text-amber-100 font-typewriter text-xs">END OF SCRAPBOOK</span>
+                        <p class="font-handwriting text-lg text-amber-900">Crafted with care for Azura Bell</p>
+                        <p class="font-typewriter text-xs text-amber-800 opacity-75">All rights reserved to good vibes & memories.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 26: Back Cover -->
+            <div class="page --cover" data-density="hard">
+                <div class="page-content flex flex-col justify-between items-center text-center py-10">
+                    <div class="wasi-tape washi-blue w-32 top-6 left-12 transform -rotate-6"></div>
+
+                    <div class="my-auto border-2 border-dashed border-amber-400/60 p-6 rounded-xl">
+                        <h2 class="font-pop text-3xl text-amber-400 font-bold mb-1">AZURA BELL</h2>
+                        <p class="font-typewriter text-xs text-slate-300">CHAPTER 2026</p>
+                        <div class="w-16 h-0.5 bg-amber-400/40 mx-auto my-3"></div>
+                        <p class="font-cute text-xl text-slate-200">Thanks for reading through!</p>
+                    </div>
+
+                    <p class="font-typewriter text-xs text-slate-400">Back Cover • End</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const bookElement = document.getElementById('scrapbook');
+                
+                // Initialize St.PageFlip
+                const pageFlip = new St.PageFlip(bookElement, {
+                    width: 380, // Base page width
+                    height: 520, // Base page height
+                    size: "stretch", // Stretch responsively to fill viewport
+                    minWidth: 260,
+                    maxWidth: 550,
+                    minHeight: 380,
+                    maxHeight: 750,
+                    maxShadowOpacity: 0.35,
+                    showCover: true,
+                    mobileScrollSupport: false,
+                    usePortrait: true,
+                    useClick: false, // MANDATORY: Disable tap/click page turn
+                    swipeDistance: 30 // MANDATORY: Enable realistic swipe gesture turn
+                });
+
+                // Load all pages into PageFlip engine
+                pageFlip.loadFromHTML(document.querySelectorAll('.page'));
+
+            }, 400);
+        });
     </script>
 </body>
 </html>
